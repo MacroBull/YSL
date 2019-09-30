@@ -31,7 +31,9 @@ class FilterForwardOutStreamBuf : public std::streambuf
 
 public:
 	explicit FilterForwardOutStreamBuf(const FilterForwardOutStream& stream)
-		: m_parent{stream}, m_target{nullptr}, m_dirty{false}, m_end_with_eol{false} {};
+		: m_parent{stream}, m_target{nullptr}, m_dirty{false}, m_end_with_eol{false}
+	{
+	}
 
 	FilterForwardOutStreamBuf(const FilterForwardOutStreamBuf& /* rvalue*/) = default;
 
@@ -102,7 +104,7 @@ int FilterForwardOutStreamBuf::overflow(int c)
 	}
 
 	m_dirty = true;
-	return m_target->sputc(c);
+	return m_target->sputc(static_cast<char>(c));
 }
 
 std::streamsize FilterForwardOutStreamBuf::xsputn(const char* s, std::streamsize n)
@@ -184,11 +186,50 @@ void StreamLogger::SkipEmptyLogMessage::reset()
 	m_init_count = buf->pcount();
 }
 
+bool StreamLogger::set_thread_format(EMITTER_MANIP value)
+{
+	return ThreadEmitter.SetOutputCharset(value) || ThreadEmitter.SetOutputCharset(value) ||
+		   ThreadEmitter.SetStringFormat(value) || ThreadEmitter.SetBoolFormat(value) ||
+		   ThreadEmitter.SetIntBase(value) || ThreadEmitter.SetSeqFormat(value) ||
+		   ThreadEmitter.SetMapFormat(value);
+}
+
+bool StreamLogger::set_thread_format(LoggerFormat value, std::size_t n)
+{
+	switch (value)
+	{
+		case LoggerFormat::Indent:
+		{
+			return ThreadEmitter.SetIndent(n);
+		}
+		case LoggerFormat::PreCommentIndent:
+		{
+			return ThreadEmitter.SetPreCommentIndent(n);
+		}
+		case LoggerFormat::PostCommentIndent:
+		{
+			return ThreadEmitter.SetPostCommentIndent(n);
+		}
+		case LoggerFormat::FloatPrecision:
+		{
+			return ThreadEmitter.SetFloatPrecision(n);
+		}
+		case LoggerFormat::DoublePrecision:
+		{
+			return ThreadEmitter.SetDoublePrecision(n);
+		}
+		default:
+		{
+			return false;
+		}
+	}
+}
+
 StreamLogger::~StreamLogger()
 {
 	self() << Newline; // throw ?
 	//	m_implicit_eol = true;
-	//	emitter() << Newline; // throw ?
+	//	ThreadEmitter << Newline; // throw ?
 	delete m_message;
 	restore_glog_state();
 }
@@ -196,7 +237,7 @@ StreamLogger::~StreamLogger()
 StreamLogger& StreamLogger::operator<<(EMITTER_MANIP value)
 {
 	m_implicit_eol = value != Newline;
-	emitter() << value; // throw !?
+	ThreadEmitter << value; // throw !?
 	return *this;
 }
 
@@ -223,14 +264,14 @@ void StreamLogger::change_message()
 	reset();
 }
 
+Emitter& StreamLogger::thread_emitter()
+{
+	return ThreadEmitter;
+}
+
 void StreamLogger::reset()
 {
 	ThreadStream.reset(this, m_message->stream());
-}
-
-Emitter& StreamLogger::emitter()
-{
-	return ThreadEmitter;
 }
 
 } // namespace YSL_NAMESPACE

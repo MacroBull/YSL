@@ -30,9 +30,24 @@ struct ThreadFrame
 	const std::string name;
 	const std::size_t fill_width{25};
 
-	explicit ThreadFrame(std::string lv_name) : name{std::move(lv_name)} {};
+	explicit ThreadFrame(std::string lv_name) : name{std::move(lv_name)}
+	{
+	}
+
 	ThreadFrame(std::string lv_name, std::size_t lv_fill_width)
-		: name{std::move(lv_name)}, fill_width{lv_fill_width} {};
+		: name{std::move(lv_name)}, fill_width{lv_fill_width}
+	{
+	}
+};
+
+enum class LoggerFormat
+{
+	Indent,
+	PreCommentIndent,
+	PostCommentIndent,
+	FloatPrecision,
+	DoublePrecision,
+	// NumLoggerFormats,
 };
 
 class StreamLogger
@@ -59,6 +74,9 @@ class StreamLogger
 	};
 
 public:
+	static bool set_thread_format(EMITTER_MANIP value);
+	static bool set_thread_format(LoggerFormat value, std::size_t n);
+
 	template <typename... CArgs>
 	explicit StreamLogger(CArgs... args)
 		: m_message{new Reconstructable<SkipEmptyLogMessage>{std::forward<CArgs>(args)...}}
@@ -75,7 +93,7 @@ public:
 	StreamLogger& operator<<(const T& value)
 	{
 		m_implicit_eol = true;
-		emitter() << value;
+		thread_emitter() << value;
 		return *this;
 	}
 
@@ -95,8 +113,9 @@ public:
 	void change_message();
 
 protected:
-	void     reset();
-	Emitter& emitter();
+	static Emitter& thread_emitter();
+
+	void reset();
 
 private:
 	// use pointer for explicit destructor call required
@@ -108,7 +127,7 @@ private:
 
 struct LoggerVoidify
 {
-	inline void operator&(const StreamLogger&)
+	inline void operator&(const StreamLogger& /*logger*/)
 	{
 	}
 };

@@ -14,6 +14,9 @@ int main()
 
 	LOG(INFO) << "Hello world!";
 
+	YSL::StreamLogger::set_thread_format(YSL::LoggerFormat::Indent, 4);
+	YSL::StreamLogger::set_thread_format(YSL::LoggerFormat::FloatPrecision, 3);
+
 	{
 		YSL(INFO) << YSL::ThreadFrame("Hello YSL") << YSL::BeginMap;
 		YSL(INFO) << "name"
@@ -56,6 +59,9 @@ int main()
 	const int  n      = 4;
 	const int  m      = 1000;
 	const auto worker = [](int idx) {
+		YSL::StreamLogger::set_thread_format(YSL::DoubleQuoted); // better performance
+		YSL::StreamLogger::set_thread_format(YSL::LoggerFormat::FloatPrecision, 3);
+
 		for (int loop = 0; loop < m; ++loop)
 		{
 			YSL(INFO) << YSL::ThreadFrame("Thread " + std::to_string(idx))
