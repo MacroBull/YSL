@@ -33,6 +33,10 @@ public:
 	explicit FilterForwardOutStreamBuf(const FilterForwardOutStream& stream)
 		: m_parent{stream}, m_target{nullptr}, m_dirty{false}, m_end_with_eol{false} {};
 
+	FilterForwardOutStreamBuf(const FilterForwardOutStreamBuf& /* rvalue*/) = default;
+
+	FilterForwardOutStreamBuf& operator=(const FilterForwardOutStreamBuf& /* rvalue*/) = delete;
+
 	inline bool end_with_eol() const
 	{
 		return m_end_with_eol;
@@ -60,6 +64,10 @@ public:
 	{
 		rdbuf(&m_streambuf);
 	}
+
+	FilterForwardOutStream(const FilterForwardOutStream& /* rvalue*/) = delete;
+
+	FilterForwardOutStream& operator=(const FilterForwardOutStream& /* rvalue*/) = delete;
 
 	inline StreamLogger* parent() const
 	{
