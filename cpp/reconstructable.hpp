@@ -37,13 +37,14 @@ struct ReconstructorImpl : ReconstructorBase<T>
 {
 	std::tuple<Params...> params;
 
-	template <typename... CArgs> // make_tuple perfect forward
-	explicit ReconstructorImpl(CArgs... args)
+	template <typename... CArgs>
+	explicit ReconstructorImpl(CArgs... args) noexcept
 		: params{std::move(std::make_tuple(std::forward<CArgs>(args)...))}
 	{
 	}
 
-	explicit ReconstructorImpl(std::tuple<Params...> rv_params) : params{std::move(rv_params)}
+	explicit ReconstructorImpl(std::tuple<Params...> rv_params) noexcept
+		: params{std::move(rv_params)}
 	{
 	}
 

@@ -30,11 +30,11 @@ struct ThreadFrame
 	const std::string name;
 	const std::size_t fill_width{25};
 
-	explicit ThreadFrame(std::string lv_name) : name{std::move(lv_name)}
+	explicit ThreadFrame(std::string lv_name) noexcept : name{std::move(lv_name)}
 	{
 	}
 
-	ThreadFrame(std::string lv_name, std::size_t lv_fill_width)
+	ThreadFrame(std::string lv_name, std::size_t lv_fill_width) noexcept
 		: name{std::move(lv_name)}, fill_width{lv_fill_width}
 	{
 	}
@@ -93,7 +93,7 @@ public:
 	StreamLogger& operator<<(const T& value)
 	{
 		m_implicit_eol = true;
-		thread_emitter() << value;
+		thread_emitter() << value; // throw ?
 		return *this;
 	}
 
@@ -139,7 +139,7 @@ struct LoggerVoidify
 #define YSL_AT_LEVEL(severity) YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, severity).self()
 #define YSL_TO_STRING(severity, message)                                                       \
 	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                   \
-								static_cast<string*>(message))                                 \
+								static_cast<std::string*>(message))                                 \
 			.self()
 #define YSL_STRING(severity, outvec)                                                           \
 	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                   \
