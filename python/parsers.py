@@ -17,56 +17,59 @@ from collections import namedtuple
 class TextStreamIO(io.TextIOBase):
     """
     wrap text line iterator for IoBase
-    if `force_line_size` is True, the last complete line is ensured to be returned in 'read()'
+    if `force_readline` is True, any read(size > 0) will equally be readline()
     """
 
     name :str = '(TextStream)'
 
     def __init__(self, text_stream:'Iterable[str]',
-                 force_line_size:bool=False):
+                 force_readline:bool=False):
         self.stream = text_stream
-        self.force_line_size = force_line_size
+        self.force_readline = force_readline
         self.buffer = io.StringIO()
 
     def readable(self):
         return True
 
     def read(self, size:int=-1)->str:
-        buffer = self.buffer.read(size)
+        if size == 0:
+            return ''
+
         if size < 0:
+            buffer = self.buffer.read(size)
+            self.buffer.seek(0)
+            self.buffer.truncate()
             for line in self.stream:
                 buffer += line
             return buffer
 
+        if self.force_readline:
+            return self.readline()
+
+        buffer = self.buffer.read(size)
         if len(buffer) < size:
+            self.buffer.seek(0)
+            self.buffer.truncate()
             while len(buffer) < size:
                 try:
                     buffer += next(self.stream)
                 except StopIteration:
                     # fewer than size bytes may be returned
                     break
+            self.buffer.write(buffer[size:])
             self.buffer.seek(0)
-            self.buffer.truncate()
-            if not self.force_line_size:
-                self.buffer.write(buffer[size:])
-                self.buffer.seek(0)
-                buffer = buffer[:size]
+            buffer = buffer[:size]
         return buffer
 
     def readline(self)->str:
-        buffer = self.buffer.readline()
-        pos = self.buffer.tell()
-        self.buffer.seek(0, 2)
-        if pos == self.buffer.tell():
-            try:
-                buffer += next(self.stream)
-            except StopIteration:
-                # fewer than size bytes may be returned
-                pass
+        buffer = self.buffer.readline() # buffer always endswith '\n' or is empty
+        if not buffer:
             self.buffer.seek(0)
             self.buffer.truncate()
-        else:
-            self.buffer.seek(pos)
+            try:
+                buffer = next(self.stream)
+            except StopIteration:
+                pass
         return buffer
 
 
@@ -146,13 +149,15 @@ class FrameParser(StreamParser):
         return self.frame_queue.pop(0)
 
 #    def fast_forward(self, document_stream):
-#        """fast forward on 'document_stream' ???"""
+#        """fast forward on 'document_stream'"""
 #
-#        while not (1 <= len(self.frame_queue) <= 2):
-#            next(document_stream)
+#        frame = None
+#        document = None
+#        while len(self.frame_queue) != 1:
+#            document = next(document_stream)
+#            frame = self.pop_frame()
 #            print(self.frame_queue)
-#            self.pop_frame()
-#        return document_stream
+#        return frame, document
 
 
 def frame_parser(
@@ -164,14 +169,14 @@ def frame_parser(
     raise 'yaml.YAMLError' if any yaml parser error encountered and persistent is False
     """
 
-    frame_parser = FrameParser()
-    text_stream = frame_parser.process(text_stream)
-    io_stream = TextStreamIO(text_stream, force_line_size=True)
+    frame_parser_ = FrameParser()
+    text_stream = frame_parser_.process(text_stream)
+    io_stream = TextStreamIO(text_stream, force_readline=True)
     while True:
         try:
-            frame_parser.reset()
+            frame_parser_.reset()
             for document in yaml.load_all(io_stream, Loader=yaml_loader_cls):
-                yield frame_parser.pop_frame(), document
+                yield frame_parser_.pop_frame(), document
         except yaml.YAMLError as e:
             if persistent:
                 continue
@@ -188,6 +193,12 @@ if __name__ == '__main__':
     record_stream = glog_parser.process(proc.stdout)
     msg_stream = get_msg(record_stream)
     frame_stream = frame_parser(msg_stream)
+#    frame_parser_ = FrameParser()
+#    text_stream = frame_parser_.process(msg_stream)
+#    io_stream = TextStreamIO(text_stream, force_readline=True)
+#    doc_stream = yaml.safe_load_all(io_stream)
+#    for d in doc_stream:
+#        f = frame_parser_.pop_frame()
     for f, d in frame_stream:
         print(f)
         print(d)

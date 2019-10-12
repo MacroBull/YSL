@@ -103,5 +103,6 @@ int main()
 		thread.join();
 	}
 
+	LOG(INFO); // HINT: extra flush
 	return 0;
 }
