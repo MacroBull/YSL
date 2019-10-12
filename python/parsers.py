@@ -28,6 +28,9 @@ class TextStreamIO(io.TextIOBase):
         self.force_line_size = force_line_size
         self.buffer = io.StringIO()
 
+    def readable(self):
+        return True
+
     def read(self, size:int=-1)->str:
         buffer = self.buffer.read(size)
         if size < 0:
@@ -142,9 +145,19 @@ class FrameParser(StreamParser):
 
         return self.frame_queue.pop(0)
 
+#    def fast_forward(self, document_stream):
+#        """fast forward on 'document_stream' ???"""
+#
+#        while not (1 <= len(self.frame_queue) <= 2):
+#            next(document_stream)
+#            print(self.frame_queue)
+#            self.pop_frame()
+#        return document_stream
+
 
 def frame_parser(
         text_stream:'Iterable[str]',
+        yaml_loader_cls:type=yaml.SafeLoader,
         persistent:bool=False) -> 'Iterable[Tuple[str, Any]]':
     """
     YSL Yaml frame parser, yield each (frame, document)
@@ -157,7 +170,7 @@ def frame_parser(
     while True:
         try:
             frame_parser.reset()
-            for document in yaml.safe_load_all(io_stream):
+            for document in yaml.load_all(io_stream, Loader=yaml_loader_cls):
                 yield frame_parser.pop_frame(), document
         except yaml.YAMLError as e:
             if persistent:

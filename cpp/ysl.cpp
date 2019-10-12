@@ -6,7 +6,9 @@ Copyright (c) 2019 Macrobull
 
 #include <iomanip>
 
-#ifdef YSL_NAMESPACE
+//// YSL configs
+
+#ifdef YSL_NAMESPACE // if YAML
 
 #include "yaml-cpp/contrib/ysl.hpp"
 
@@ -15,6 +17,8 @@ Copyright (c) 2019 Macrobull
 #include "ysl.hpp"
 
 #endif
+
+//// YSL implementations
 
 namespace YSL_NAMESPACE
 {
@@ -136,6 +140,7 @@ std::streamsize FilterForwardOutStreamBuf::xsputn(const char* s, std::streamsize
 	return ret;
 }
 
+// threaded static stubs
 thread_local FilterForwardOutStream      ThreadStream;
 thread_local Emitter                     ThreadEmitter(ThreadStream);
 thread_local decltype(FLAGS_minloglevel) Minloglevel;
@@ -154,6 +159,15 @@ inline void restore_glog_state()
 } // namespace
 
 thread_local std::size_t ThreadFrame::Index{0};
+
+ThreadFrame::ThreadFrame(std::string rv_name) noexcept : name{std::move(rv_name)}
+{
+}
+
+ThreadFrame::ThreadFrame(std::string rv_name, std::size_t rv_fill_width) noexcept
+	: name{std::move(rv_name)}, fill_width{rv_fill_width}
+{
+}
 
 StreamLogger::SkipEmptyLogMessage::~SkipEmptyLogMessage()
 {
@@ -270,6 +284,11 @@ void StreamLogger::change_message()
 Emitter& StreamLogger::thread_emitter()
 {
 	return ThreadEmitter;
+}
+
+std::ostream& StreamLogger::thread_stream()
+{
+	return ThreadStream;
 }
 
 void StreamLogger::reset()

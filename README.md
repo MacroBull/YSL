@@ -12,7 +12,7 @@ Use macro `YSL` instead of `LOG`, you get a `YAML::Emitter`-like stream with Goo
 
 #include <yaml-cpp/stlemitter.h>
 
-YSL(INFO) << YSL::Frame("Hello Container") << YAML::FloatPrecision(3) << YAML::BeginMap;
+YSL(INFO) << YSL::ThreadFrame("Hello Container") << YAML::FloatPrecision(3) << YAML::BeginMap;
 YSL(INFO) << "hello" << std::map<int, float>{{1, 3.4f}, {2, 6.78f}, {3, 9.0f}};
 YSL(INFO) << "PI" << YAML::Flow << std::vector<int>{3, 1, 4, 1, 5, 9, 2, 6};
 YSL(INFO) << YAML::EndMap;
@@ -28,3 +28,7 @@ I0926 15:42:30.953830 12990 main.cpp:20]   2: 6.78
 I0926 15:42:30.953848 12990 main.cpp:20]   3: 9
 I0926 15:42:30.953855 12990 main.cpp:21] PI: [3, 1, 4, 1, 5, 9, 2, 6]
 ```
+
+## Demo
+
+Try `sh demo.sh`

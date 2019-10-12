@@ -8,17 +8,20 @@ Created on Fri Sep 20 10:42:02 2019
 
 from __future__ import division
 
+# import ysl.
 from backends import tailc
 from filters import thread_filter
 from glog_parser import GlogParser, get_msg
 from parsers import FrameParser, frame_parser
 
+# setup source
+proc = tailc('/tmp/demo.log')
+glog_parser = GlogParser()
+record_stream = glog_parser.process(proc.stdout)
 
+# select one thread to parse
 thread_id = None
 while True:
-    proc = tailc('/tmp/test.log')
-    glog_parser = GlogParser()
-    record_stream = glog_parser.process(proc.stdout)
     if thread_id is None:
         for record in record_stream:
             match = FrameParser.REGEX.fullmatch(record.msg)
@@ -32,6 +35,7 @@ while True:
         break
 
 
+# plot data
 import time
 import matplotlib.pyplot as plt
 

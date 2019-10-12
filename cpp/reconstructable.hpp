@@ -23,7 +23,7 @@ inline T* reconstruct(T& target, CArgs... args)
 	return new (&target) T{std::forward<CArgs>(args)...};
 }
 
-//// ReconstructorBase: interface for ...
+//// ReconstructorBase: base class
 
 template <typename T>
 struct ReconstructorBase
@@ -31,6 +31,8 @@ struct ReconstructorBase
 	virtual ~ReconstructorBase() = default;
 	virtual T* reconstruct(T&)   = 0;
 };
+
+//// ReconstructorImpl: @ref ReconstructorBase implementation with tupled parameters
 
 template <typename T, typename... Params>
 struct ReconstructorImpl : ReconstructorBase<T>
@@ -48,7 +50,7 @@ struct ReconstructorImpl : ReconstructorBase<T>
 	{
 	}
 
-	T* reconstruct(T& target) override
+	inline T* reconstruct(T& target) override
 	{
 		return reconstruct_impl(target);
 	}
@@ -68,24 +70,7 @@ protected:
 	}
 };
 
-template <typename T>
-struct ReconstructorHelper
-{
-	template <typename... CArgs>
-	inline static ReconstructorBase<T>* create(CArgs... args)
-	{
-		return new ReconstructorImpl<T, CArgs...>{std::forward<CArgs>(args)...};
-	}
-
-	template <typename... CArgs>
-	inline static std::pair<ReconstructorBase<T>*, T*> create_with_instance(CArgs... args)
-	{
-		return std::make_pair(new ReconstructorImpl<T, CArgs...>{std::forward<CArgs>(args)...},
-							  new T{std::forward<CArgs>(args)...});
-	}
-};
-
-//// Reconstructable
+//// ReconstructableImpl: attach reconstructor to a class
 
 template <typename T>
 class ReconstructableImpl : public T
@@ -124,6 +109,8 @@ public:
 private:
 	ReconstructorBase<ReconstructableImpl>* m_reconstructor{nullptr};
 };
+
+//// Reconstructable: remove @ref ReconstructableImpl::reset
 
 template <typename T>
 struct Reconstructable : ReconstructableImpl<T>

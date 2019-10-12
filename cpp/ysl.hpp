@@ -12,34 +12,23 @@ Copyright (c) 2019 Macrobull
 
 #include "reconstructable.hpp"
 
-#ifndef YSL_NAMESPACE
+//// YSL configs
+
+#ifndef YSL_NAMESPACE // namespace can be redefined
 
 #define YSL_NAMESPACE YSL
 
 #endif
 
+//// YSL interfaces
+
 namespace YSL_NAMESPACE
 {
 
+// inherit YAML namespace
 using namespace YAML;
 
-struct ThreadFrame
-{
-	thread_local static std::size_t Index;
-
-	const std::string name;
-	const std::size_t fill_width{25};
-
-	explicit ThreadFrame(std::string lv_name) noexcept : name{std::move(lv_name)}
-	{
-	}
-
-	ThreadFrame(std::string lv_name, std::size_t lv_fill_width) noexcept
-		: name{std::move(lv_name)}, fill_width{lv_fill_width}
-	{
-	}
-};
-
+// threaded global format control, see @ref YAML::Emitter
 enum class LoggerFormat
 {
 	Indent,
@@ -50,6 +39,19 @@ enum class LoggerFormat
 	// NumLoggerFormats,
 };
 
+// threaded incremental frame manipulator, an extension of YAML document
+struct ThreadFrame
+{
+	thread_local static std::size_t Index;
+
+	const std::string name;
+	const std::size_t fill_width{25};
+
+	explicit ThreadFrame(std::string rv_name) noexcept;
+	ThreadFrame(std::string rv_name, std::size_t rv_fill_width) noexcept;
+};
+
+// the YSL logger class
 class StreamLogger
 {
 	class SkipEmptyLogMessage : public google::LogMessage
@@ -74,9 +76,11 @@ class StreamLogger
 	};
 
 public:
+	// threaded global format control
 	static bool set_thread_format(EMITTER_MANIP value);
 	static bool set_thread_format(LoggerFormat value, std::size_t n);
 
+	// forward constructor
 	template <typename... CArgs>
 	explicit StreamLogger(CArgs... args)
 		: m_message{new Reconstructable<SkipEmptyLogMessage>{std::forward<CArgs>(args)...}}
@@ -89,42 +93,50 @@ public:
 	StreamLogger(const StreamLogger&) = delete;
 	StreamLogger& operator=(const StreamLogger&) = delete;
 
+	// forward YAML-type value
 	template <typename T>
-	StreamLogger& operator<<(const T& value)
+	inline StreamLogger& operator<<(const T& value)
 	{
 		m_implicit_eol = true;
 		thread_emitter() << value; // throw ?
 		return *this;
 	}
 
+	// threaded format control
 	StreamLogger& operator<<(EMITTER_MANIP value);
+	// ThreadFrame
 	StreamLogger& operator<<(const ThreadFrame& value);
 
+	// whether the end-of-line is implicit set by YAML internally
 	inline bool is_implicit_eol() const
 	{
 		return m_implicit_eol;
 	}
 
+	// self call
 	inline StreamLogger& self()
 	{
 		return *this;
 	}
 
+	// new glog message for new line if necessary
 	void change_message();
 
 protected:
-	static Emitter& thread_emitter();
+	// internal stubs
+	static Emitter&      thread_emitter();
+	static std::ostream& thread_stream();
 
 	void reset();
 
 private:
-	// use pointer for explicit destructor call required
+	// use pointer for explicit destructor call
 	Reconstructable<SkipEmptyLogMessage>* m_message{nullptr};
 	bool                                  m_implicit_eol{};
 };
 
-// void operator&(std::nullptr_t, const StreamLogger&) {}
-
+// voidifier, see @ref google::LogMessageVoidify
+// inline void operator&(std::nullptr_t, const StreamLogger&) {}
 struct LoggerVoidify
 {
 	inline void operator&(const StreamLogger& /*logger*/)
@@ -134,12 +146,14 @@ struct LoggerVoidify
 
 } // namespace YSL_NAMESPACE
 
+//// YSL macros, see @ref "glog/logging.h"
+
 #define YSL(severity)                                                                          \
 	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity).self()
 #define YSL_AT_LEVEL(severity) YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, severity).self()
 #define YSL_TO_STRING(severity, message)                                                       \
 	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                   \
-								static_cast<std::string*>(message))                                 \
+								static_cast<std::string*>(message))                            \
 			.self()
 #define YSL_STRING(severity, outvec)                                                           \
 	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                   \
