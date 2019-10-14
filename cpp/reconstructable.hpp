@@ -6,6 +6,7 @@ Copyright (c) 2019 Macrobull
 
 #pragma once
 
+#include <cassert>
 #include <tuple>
 #include <type_traits>
 
@@ -28,8 +29,8 @@ inline T* reconstruct(T& target, CArgs... args)
 template <typename T>
 struct ReconstructorBase
 {
-	virtual ~ReconstructorBase() = default;
-	virtual T* reconstruct(T&)   = 0;
+	virtual ~ReconstructorBase()     = default;
+	virtual T* reconstruct(T&) const = 0;
 };
 
 //// ReconstructorImpl: @ref ReconstructorBase implementation with tupled parameters
@@ -37,7 +38,7 @@ struct ReconstructorBase
 template <typename T, typename... Params>
 struct ReconstructorImpl : ReconstructorBase<T>
 {
-	std::tuple<Params...> params;
+	/*const*/ std::tuple<Params...> params;
 
 	template <typename... CArgs>
 	explicit ReconstructorImpl(CArgs... args) noexcept
@@ -50,23 +51,23 @@ struct ReconstructorImpl : ReconstructorBase<T>
 	{
 	}
 
-	inline T* reconstruct(T& target) override
+	inline T* reconstruct(T& target) const override
 	{
 		return reconstruct_impl(target);
 	}
 
 protected:
-	inline T* reconstruct_impl(T& target, Params... args)
+	inline T* reconstruct_impl(T& target, Params... args) const
 	{
 		return ::reconstruct(target, std::forward<Params>(args)...);
 	}
 
 	template <typename... Args>
 	inline enable_if_t<sizeof...(Args) != sizeof...(Params), T*>
-	reconstruct_impl(T& target, Args&&... args)
+	reconstruct_impl(T& target, Args&&... args) const
 	{
-		return reconstruct_impl(target, std::forward<Args>(args)...,
-								std::get<sizeof...(Args)>(params));
+		return reconstruct_impl(
+				target, std::forward<Args>(args)..., std::get<sizeof...(Args)>(params));
 	}
 };
 
@@ -91,26 +92,25 @@ public:
 		m_reconstructor = nullptr;
 	}
 
-	ReconstructableImpl(const ReconstructableImpl&) = default;
-	ReconstructableImpl& operator=(const ReconstructableImpl&) = default;
+	ReconstructableImpl(const ReconstructableImpl& /*rvalue*/) = default;
+
+	ReconstructableImpl& operator=(const ReconstructableImpl& /*rvalue*/) = default;
 
 	inline void reconstruct()
 	{
-		if (m_reconstructor != nullptr)
-		{
-			auto reconstructor = m_reconstructor;
-			m_reconstructor    = nullptr;
-			reconstructor->reconstruct(*this);
-			// assert(m_reconstructor == nullptr);
-			m_reconstructor = reconstructor;
-		}
+		assert(m_reconstructor != nullptr);
+		auto reconstructor = m_reconstructor;
+		m_reconstructor    = nullptr;
+		reconstructor->reconstruct(*this);
+		assert(m_reconstructor == nullptr);
+		m_reconstructor = reconstructor;
 	}
 
 private:
-	ReconstructorBase<ReconstructableImpl>* m_reconstructor{nullptr};
+	const ReconstructorBase<ReconstructableImpl>* m_reconstructor{nullptr};
 };
 
-//// Reconstructable: remove @ref ReconstructableImpl::reset
+//// Reconstructable: purify arguments of @ref ReconstructableImpl
 
 template <typename T>
 struct Reconstructable : ReconstructableImpl<T>

@@ -7,6 +7,12 @@
 // use yaml-cpp stl emitter
 #include <yaml-cpp/stlemitter.h>
 
+template <typename K, typename V>
+inline YSL::Emitter& operator<<(YSL::Emitter& emitter, const std::pair<K, V>& value)
+{
+	return emitter << YSL::Flow << YSL::BeginSeq << value.first << value.second << YSL::EndSeq;
+}
+
 int main()
 {
 	// setup glog
@@ -36,7 +42,7 @@ int main()
 		YSL(INFO) << YSL::FloatPrecision(3);
 		YSL(INFO) << YSL::BeginMap;
 		YSL(INFO) << "hello" << std::map<int, float>{{1, 3.4f}, {2, 6.78f}, {3, 9.0f}};
-		YSL(INFO) << "PI";
+		YSL(INFO) << std::make_pair("Math", "PI");
 		YSL(INFO) << YSL::Flow << std::vector<int>{3, 1, 4, 1, 5, 9, 2, 6};
 		YSL(INFO) << YSL::EndMap << YSL::EndDoc;
 	}

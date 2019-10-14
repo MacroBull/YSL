@@ -149,23 +149,23 @@ struct LoggerVoidify
 //// YSL macros, see @ref "glog/logging.h"
 
 #define YSL(severity)                                                                          \
-	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity).self()
+	YSL_NAMESPACE::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity}.self()
 #define YSL_AT_LEVEL(severity) YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, severity).self()
 #define YSL_TO_STRING(severity, message)                                                       \
-	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                   \
-								static_cast<std::string*>(message))                            \
+	YSL_NAMESPACE::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                   \
+								static_cast<std::string*>(message)}                            \
 			.self()
 #define YSL_STRING(severity, outvec)                                                           \
-	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                   \
-								static_cast<std::vector<std::string>*>(outvec))                \
+	YSL_NAMESPACE::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                   \
+								static_cast<std::vector<std::string>*>(outvec)}                \
 			.self()
 #define YSL_TO_SINK(sink, severity)                                                            \
-	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                   \
-								static_cast<google::LogSink*>(sink), true)                     \
+	YSL_NAMESPACE::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                   \
+								static_cast<google::LogSink*>(sink), true}                     \
 			.self()
 #define YSL_TO_SINK_BUT_NOT_TO_LOGFILE(sink, severity)                                         \
-	YSL_NAMESPACE::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                   \
-								static_cast<google::LogSink*>(sink), false)                    \
+	YSL_NAMESPACE::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                   \
+								static_cast<google::LogSink*>(sink), false}                    \
 			.self()
 
 #define YSL_IF(severity, condition)                                                            \
