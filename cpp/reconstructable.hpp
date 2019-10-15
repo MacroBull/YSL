@@ -18,6 +18,12 @@ using enable_if_t = typename std::enable_if<P, T>::type;
 //// reconstruct function
 
 template <typename T, typename... CArgs>
+inline T* construct(T& target, CArgs... args)
+{
+	return new (&target) T{std::forward<CArgs>(args)...};
+}
+
+template <typename T, typename... CArgs>
 inline T* reconstruct(T& target, CArgs... args)
 {
 	target.~T();
@@ -30,6 +36,7 @@ template <typename T>
 struct ReconstructorBase
 {
 	virtual ~ReconstructorBase()     = default;
+	virtual T* construct(T&) const = 0;
 	virtual T* reconstruct(T&) const = 0;
 };
 
@@ -51,22 +58,28 @@ struct ReconstructorImpl : ReconstructorBase<T>
 	{
 	}
 
+	inline T* construct(T& target) const override
+	{
+		return construct_impl(target);
+	}
+
 	inline T* reconstruct(T& target) const override
 	{
-		return reconstruct_impl(target);
+		target.~T();
+		return construct_impl(target);
 	}
 
 protected:
-	inline T* reconstruct_impl(T& target, Params... args) const
+	inline T* construct_impl(T& target, Params... args) const
 	{
-		return ::reconstruct(target, std::forward<Params>(args)...);
+		return ::construct(target, std::forward<Params>(args)...);
 	}
 
 	template <typename... Args>
 	inline enable_if_t<sizeof...(Args) != sizeof...(Params), T*>
-	reconstruct_impl(T& target, Args&&... args) const
+	construct_impl(T& target, Args&&... args) const
 	{
-		return reconstruct_impl(
+		return construct_impl(
 				target, std::forward<Args>(args)..., std::get<sizeof...(Args)>(params));
 	}
 };

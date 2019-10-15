@@ -296,4 +296,54 @@ void StreamLogger::reset()
 	ThreadStream.reset(this, m_message->stream());
 }
 
+Scope::~Scope()
+{
+	if (m_reconstructor != nullptr)
+	{
+		assert(m_logger != nullptr);
+		m_reconstructor->construct(*m_logger);
+		*m_logger << EndMap;
+		delete m_logger;
+		m_logger = nullptr;
+		delete m_reconstructor;
+		m_reconstructor = nullptr;
+	}
+}
+
+void Scope::reset()
+{
+	if (m_logger != nullptr)
+	{
+		*m_logger << BeginMap;
+		m_logger->~StreamLogger();
+	}
+}
+
+void Scope::reset(const std::string& name)
+{
+	if (m_logger != nullptr)
+	{
+		*m_logger << Key << name << Value << BeginMap;
+		m_logger->~StreamLogger();
+	}
+}
+
+void Scope::reset_compact()
+{
+	if (m_logger != nullptr)
+	{
+		*m_logger << Flow << BeginMap;
+		m_logger->~StreamLogger();
+	}
+}
+
+void Scope::reset_compact(const std::string& name)
+{
+	if (m_logger != nullptr)
+	{
+		*m_logger << Key << name << Value << Flow << BeginMap;
+		m_logger->~StreamLogger();
+	}
+}
+
 } // namespace YSL_NAMESPACE

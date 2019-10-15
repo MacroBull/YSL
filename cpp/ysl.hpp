@@ -148,6 +148,70 @@ struct LoggerVoidify
 	}
 };
 
+// RAII VLOG map scope
+class Scope
+{
+public:
+	template <typename... CArgs>
+	Scope(int enabled, CArgs... args)
+		: m_logger{enabled ? new StreamLogger{std::forward<CArgs>(args)...} : nullptr}
+		, m_reconstructor{
+				  enabled ? new ReconstructorImpl<StreamLogger, CArgs...>{std::forward<CArgs>(
+									args)...}
+						  : nullptr}
+	{
+		reset();
+	}
+
+	template <typename... CArgs>
+	Scope(const std::string& name, int enabled, CArgs... args)
+		: m_logger{enabled ? new StreamLogger{std::forward<CArgs>(args)...} : nullptr}
+		, m_reconstructor{
+				  enabled ? new ReconstructorImpl<StreamLogger, CArgs...>{std::forward<CArgs>(
+									args)...}
+						  : nullptr}
+	{
+		reset(name);
+	}
+
+	template <typename... CArgs>
+	Scope(std::nullptr_t, int enabled, CArgs... args)
+		: m_logger{enabled ? new StreamLogger{std::forward<CArgs>(args)...} : nullptr}
+		, m_reconstructor{
+				  enabled ? new ReconstructorImpl<StreamLogger, CArgs...>{std::forward<CArgs>(
+									args)...}
+						  : nullptr}
+	{
+		reset_compact();
+	}
+
+	template <typename... CArgs>
+	Scope(std::nullptr_t, const std::string& name, int enabled, CArgs... args)
+		: m_logger{enabled ? new StreamLogger{std::forward<CArgs>(args)...} : nullptr}
+		, m_reconstructor{
+				  enabled ? new ReconstructorImpl<StreamLogger, CArgs...>{std::forward<CArgs>(
+									args)...}
+						  : nullptr}
+	{
+		reset_compact(name);
+	}
+
+	~Scope();
+
+	Scope(const Scope& /*rvalue*/) = delete;
+	Scope& operator=(const Scope& /*rvalue*/) = delete;
+
+protected:
+	void reset();
+	void reset(const std::string& name);
+	void reset_compact();
+	void reset_compact(const std::string& name);
+
+private:
+	StreamLogger*                    m_logger{nullptr};
+	ReconstructorBase<StreamLogger>* m_reconstructor;
+};
+
 } // namespace YSL_NAMESPACE
 
 //// YSL macros, see @ref "glog/logging.h"
@@ -183,3 +247,27 @@ namespace YSL_ = YSL; // prevent recursive macro expansion
 	!(condition) ? (void) 0 : YSL_NS_ LoggerVoidify() & YSL(severity)
 #define VYSL(verboselevel) YSL_IF(INFO, VLOG_IS_ON(verboselevel))
 #define VYSL_IF(verboselevel, condition) YSL_IF(INFO, (condition) && VLOG_IS_ON(verboselevel))
+
+#define VYSL_SCOPE(verboselevel)                                                               \
+	YSL_NS_ Scope LOG_EVERY_N_VARNAME(scope_, __LINE__)                                        \
+	{                                                                                          \
+		static_cast<int>(VLOG_IS_ON(verboselevel)), __FILE__, __LINE__, google::GLOG_INFO      \
+	}
+#define VYSL_CSCOPE(verboselevel)                                                              \
+	YSL_NS_ Scope LOG_EVERY_N_VARNAME(scope_, __LINE__)                                        \
+	{                                                                                          \
+		nullptr, static_cast<int>(VLOG_IS_ON(verboselevel)), __FILE__, __LINE__,               \
+				google::GLOG_INFO                                                              \
+	}
+#define VYSL_NSCOPE(verboselevel, name)                                                        \
+	YSL_NS_ Scope LOG_EVERY_N_VARNAME(scope_, __LINE__)                                        \
+	{                                                                                          \
+		name, static_cast<int>(VLOG_IS_ON(verboselevel)), __FILE__, __LINE__,                  \
+				google::GLOG_INFO                                                              \
+	}
+#define VYSL_NCSCOPE(verboselevel, name)                                                       \
+	YSL_NS_ Scope LOG_EVERY_N_VARNAME(scope_, __LINE__)                                        \
+	{                                                                                          \
+		nullptr, name, static_cast<int>(VLOG_IS_ON(verboselevel)), __FILE__, __LINE__,         \
+				google::GLOG_INFO                                                              \
+	}

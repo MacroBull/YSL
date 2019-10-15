@@ -1,6 +1,8 @@
 
 #include <cmath>
+#include <map>
 #include <thread>
+#include <vector>
 
 #include "ysl.hpp"
 
