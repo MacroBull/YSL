@@ -32,3 +32,20 @@ I0926 15:42:30.953855 12990 main.cpp:21] PI: [3, 1, 4, 1, 5, 9, 2, 6]
 ## Demo
 
 Try `sh demo.sh`
+
+## TODO
+
+[ ] more documentation
+[ ] cpp: inline version
+[ ] cpp: abstract emitter overloads, especially tagged literals -> extraemitter.h
+[ ] cpp: tweak as_numeric
+[ ] cpp: add Reconstructable<NullableStreamLogger>
+[ ] cpp: add Sequential
+[ ] cpp: implement Scope{Sequential enter, Sequential exit}
+[ ] cpp: add SCOPE(plain), FSCOPE(frame + scope), MSCOPE(key + scope), CSCOPE(key + flow + scope)
+[ ] cpp: add IFSCOPE(frame + id + scope), IMSCOPE(key + id + scope), ICSCOPE(key + id + flow + scope) overloads
+[ ] python: python < 3.6 support
+[ ] python: implement ysl.py with yaml + backends(logging)
+[ ] python: use yaml.BaseConstructor
+[ ] python: implement protobuf constructor
+[ ] python: add FrameParser.fastforward_to
