@@ -5,15 +5,7 @@
 #include <vector>
 
 #include "ysl.hpp"
-
-// use yaml-cpp stl emitter
-#include <yaml-cpp/stlemitter.h>
-
-template <typename K, typename V>
-inline YSL::Emitter& operator<<(YSL::Emitter& emitter, const std::pair<K, V>& value)
-{
-	return emitter << YSL::Flow << YSL::BeginSeq << value.first << value.second << YSL::EndSeq;
-}
+#include "stl_emitter.hpp"
 
 int main()
 {
@@ -22,38 +14,42 @@ int main()
 	FLAGS_minloglevel = 0;
 	FLAGS_v           = 2;
 
-	// setup YSL for current thread
+	// setup YSL for current thread: use 4 sapces as indent
 	YSL::StreamLogger::set_thread_format(YSL::LoggerFormat::Indent, 4);
 
 	// plain glog LOG
-	LOG(INFO) << "Hello world!";
+	LOG(INFO) << "This is a plain glog record";
 
 	// simple key-value scope
+	// YSL(INFO) << key << value;
 	{
-		YSL(INFO) << YSL::ThreadFrame("Hello YSL") << YSL::BeginMap;
-		YSL(INFO) << "name"
-				  << "Mark McGwire";
+		YSL_FSCOPE(INFO, "A YSL Frame");
+		YSL(INFO) << "name"          // key
+				  << "Mark McGwire"; // value
 		YSL(INFO) << "hr" << 65;
 		YSL(INFO) << "avg" << 0.278f;
-		YSL(INFO) << YSL::EndMap;
 	}
 
 	// stl and flow emission, explicit end-of-document
 	{
-		YSL(INFO) << YSL::ThreadFrame("Hello Container");
+		// manually start a frame
+		YSL(INFO) << YSL::ThreadFrame("Some Containers");
+		// setup local precision
 		YSL(INFO) << YSL::FloatPrecision(3);
+		// start a mapping
 		YSL(INFO) << YSL::BeginMap;
 		YSL(INFO) << "hello" << std::map<int, float>{{1, 3.4f}, {2, 6.78f}, {3, 9.0f}};
-		YSL(INFO) << std::make_pair("Math", "PI");
+		YSL(INFO) << "PI";
 		YSL(INFO) << YSL::Flow << std::vector<int>{3, 1, 4, 1, 5, 9, 2, 6};
+		// end the mapping and the frame(explicitly)
 		YSL(INFO) << YSL::EndMap << YSL::EndDoc;
 	}
 
 	// comment, literal and implicit/explicit new line
 	{
-		YSL(INFO) << YSL::ThreadFrame("Hello Newline") << YSL::BeginMap;
+		YSL_FSCOPE(INFO, "About Comment, Literal And Newline");
 		YSL(INFO) << YSL::Comment("This is a comment");
-		YSL(INFO) << "glog newline" << -1;
+		YSL(INFO) << "glog newline" << nullptr;
 		LOG(INFO) << std::endl;
 		YSL(INFO) << "ysl newline" << true;
 		YSL(INFO) << YSL::Newline;
@@ -78,7 +74,7 @@ int main()
 	const int  n      = 4;
 	const int  m      = 1000;
 	const auto worker = [](int idx) {
-		// setup for each thread
+		// use quoted string style for better performance
 		YSL::StreamLogger::set_thread_format(YSL::DoubleQuoted); // better performance
 		YSL::StreamLogger::set_thread_format(YSL::LoggerFormat::FloatPrecision, 3);
 
@@ -98,7 +94,7 @@ int main()
 			std::this_thread::sleep_for(std::chrono::milliseconds{10});
 		}
 
-		YSL(INFO) << YSL::EndDoc;
+		YSL(INFO) << YSL::EndDoc; // explicit
 	};
 	std::vector<std::thread> threads;
 	threads.reserve(n);

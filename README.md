@@ -35,17 +35,16 @@ Try `sh demo.sh`
 
 ## TODO
 
-[ ] more documentation
-[ ] cpp: inline version
-[ ] cpp: abstract emitter overloads, especially tagged literals -> extraemitter.h
-[ ] cpp: tweak as_numeric
-[ ] cpp: add Reconstructable<NullableStreamLogger>
-[ ] cpp: add Sequential
-[ ] cpp: implement Scope{Sequential enter, Sequential exit}
-[ ] cpp: add SCOPE(plain), FSCOPE(frame + scope), MSCOPE(key + scope), CSCOPE(key + flow + scope)
-[ ] cpp: add IFSCOPE(frame + id + scope), IMSCOPE(key + id + scope), ICSCOPE(key + id + flow + scope) overloads
-[ ] python: python < 3.6 support
-[ ] python: implement ysl.py with yaml + backends(logging)
-[ ] python: use yaml.BaseConstructor
-[ ] python: implement protobuf constructor
-[ ] python: add FrameParser.fastforward_to
+- [ ] more documentation
+- [x] cpp: inline version
+- [x] cpp: abstract emitter overloads, especially tagged literals -> extraemitter.h
+- [ ] cpp: add Reconstructable<NullableStreamLogger>
+- [x] cpp: add Sequential
+- [x] cpp: implement Scope{Sequential enter, Sequential exit}
+- [x] cpp: add SCOPE(plain), FSCOPE(frame + scope), MSCOPE(key + scope), CSCOPE(key + flow + scope)
+- [x] cpp: add IFSCOPE(frame + id + scope), IMSCOPE(key + id + scope), ICSCOPE(key + id + flow + scope) overloads
+- [ ] python: python < 3.6 support
+- [ ] python: implement ysl.py with yaml + backends(logging)
+- [ ] python: inherited yaml.XXConstructor, XXLoader
+- [ ] python: implement protobuf constructor
+- [ ] python: add FrameParser.fastforward_to

@@ -6,9 +6,10 @@ Copyright (c) 2019 Macrobull
 
 #pragma once
 
-#include <cassert>
 #include <tuple>
 #include <type_traits>
+
+#include <cassert>
 
 //// hepler traits
 
@@ -18,16 +19,11 @@ using enable_if_t = typename std::enable_if<P, T>::type;
 //// reconstruct function
 
 template <typename T, typename... CArgs>
-inline T* construct(T& target, CArgs... args)
-{
-	return new (&target) T{std::forward<CArgs>(args)...};
-}
-
-template <typename T, typename... CArgs>
-inline T* reconstruct(T& target, CArgs... args)
+inline T& reconstruct(T& target, CArgs... args)
 {
 	target.~T();
-	return new (&target) T{std::forward<CArgs>(args)...};
+	new (&target) T{std::forward<CArgs>(args)...};
+	return target;
 }
 
 //// ReconstructorBase: base class
@@ -36,8 +32,8 @@ template <typename T>
 struct ReconstructorBase
 {
 	virtual ~ReconstructorBase()     = default;
-	virtual T* construct(T&) const = 0;
-	virtual T* reconstruct(T&) const = 0;
+	virtual T& construct(T&) const   = 0;
+	virtual T& reconstruct(T&) const = 0;
 };
 
 //// ReconstructorImpl: @ref ReconstructorBase implementation with tupled parameters
@@ -45,38 +41,37 @@ struct ReconstructorBase
 template <typename T, typename... Params>
 struct ReconstructorImpl : ReconstructorBase<T>
 {
-	/*const*/ std::tuple<Params...> params;
+	/*const*/ std::tuple<Params...> params; // editable
 
 	template <typename... CArgs>
 	explicit ReconstructorImpl(CArgs... args) noexcept
 		: params{std::move(std::make_tuple(std::forward<CArgs>(args)...))}
-	{
-	}
+	{}
 
 	explicit ReconstructorImpl(std::tuple<Params...> rv_params) noexcept
 		: params{std::move(rv_params)}
-	{
-	}
+	{}
 
-	inline T* construct(T& target) const override
+	inline T& construct(T& target) const override
 	{
 		return construct_impl(target);
 	}
 
-	inline T* reconstruct(T& target) const override
+	inline T& reconstruct(T& target) const override
 	{
 		target.~T();
 		return construct_impl(target);
 	}
 
 protected:
-	inline T* construct_impl(T& target, Params... args) const
+	inline T& construct_impl(T& target, Params... args) const
 	{
-		return ::construct(target, std::forward<Params>(args)...);
+		new (&target) T{std::forward<Params>(args)...};
+		return target;
 	}
 
 	template <typename... Args>
-	inline enable_if_t<sizeof...(Args) != sizeof...(Params), T*>
+	inline enable_if_t<sizeof...(Args) != sizeof...(Params), T&>
 	construct_impl(T& target, Args&&... args) const
 	{
 		return construct_impl(
@@ -96,8 +91,7 @@ public:
 		, m_reconstructor{reset ? nullptr
 								: new ReconstructorImpl<ReconstructableImpl, bool, CArgs...>{
 										  true, std::forward<CArgs>(args)...}}
-	{
-	}
+	{}
 
 	~ReconstructableImpl()
 	{
@@ -109,15 +103,7 @@ public:
 
 	ReconstructableImpl& operator=(const ReconstructableImpl& /*rvalue*/) = default;
 
-	inline void reconstruct()
-	{
-		assert(m_reconstructor != nullptr);
-		auto reconstructor = m_reconstructor;
-		m_reconstructor    = nullptr;
-		reconstructor->reconstruct(*this);
-		assert(m_reconstructor == nullptr);
-		m_reconstructor = reconstructor;
-	}
+	inline void reconstruct();
 
 private:
 	const ReconstructorBase<ReconstructableImpl>* m_reconstructor{nullptr};
@@ -131,6 +117,18 @@ struct Reconstructable : ReconstructableImpl<T>
 	template <typename... CArgs>
 	explicit Reconstructable(CArgs... args)
 		: ReconstructableImpl<T>{false, std::forward<CArgs>(args)...}
-	{
-	}
+	{}
 };
+
+template <typename T>
+void ReconstructableImpl<T>::reconstruct()
+{
+	assert(m_reconstructor != nullptr && "reconstruct without reconstructor");
+
+	auto reconstructor = m_reconstructor;
+	m_reconstructor    = nullptr;
+	reconstructor->reconstruct(*this);
+	assert(m_reconstructor == nullptr);
+
+	m_reconstructor = reconstructor;
+}
