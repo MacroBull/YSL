@@ -38,7 +38,7 @@ Try `sh demo.sh`
 - [ ] more documentation
 - [x] cpp: inline version
 - [x] cpp: abstract emitter overloads, especially tagged literals -> extraemitter.h
-- [ ] cpp: add Reconstructable<NullableStreamLogger>
+- [ ] cpp: add Reconstructable< NullableStreamLogger >
 - [x] cpp: add Sequential
 - [x] cpp: implement Scope{Sequential enter, Sequential exit}
 - [x] cpp: add SCOPE(plain), FSCOPE(frame + scope), MSCOPE(key + scope), CSCOPE(key + flow + scope)
