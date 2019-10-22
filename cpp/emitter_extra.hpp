@@ -127,7 +127,7 @@ inline Emitter& emit_complex(Emitter& emitter, const T& real, const T& imag)
 
 #else
 
-	return emitter << Flow << BeginSeq << real << imag << EndSeq;
+	return emitter << Flow << BeginSeq << as_numeric(real) << as_numeric(imag) << EndSeq;
 
 #endif
 }
