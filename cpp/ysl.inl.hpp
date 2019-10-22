@@ -4,6 +4,8 @@ Copyright (c) 2019 Macrobull
 
 */
 
+#pragma once
+
 #include <iomanip>
 
 #include "ysl.hpp"
@@ -154,7 +156,7 @@ YSL_IMPL_STORAGE std::streamsize
 namespace detail
 {
 
-// threaded static stubs
+// static stubs
 
 inline YSL_IMPL_NS_ FilterForwardOutStream& thread_stream()
 {
@@ -170,6 +172,7 @@ inline Emitter& thread_emitter()
 
 inline const decltype(FLAGS_minloglevel)& min_log_level()
 {
+	// constify minloglevel, call this after glog initialized
 	static const decltype(FLAGS_minloglevel) ret{FLAGS_minloglevel};
 	return ret;
 }
@@ -197,6 +200,11 @@ inline void restore_glog_state()
 
 } // namespace YSL_IMPL_NS
 
+YSL_IMPL_STORAGE std::size_t ThreadFrame::index()
+{
+	return detail::thread_frame_index();
+}
+
 YSL_IMPL_STORAGE ThreadFrame::ThreadFrame(std::string rv_name) noexcept
 	: name{std::move(rv_name)}
 {}
@@ -206,11 +214,6 @@ ThreadFrame::ThreadFrame(std::string rv_name, std::size_t rv_fill_width) noexcep
 	: name{std::move(rv_name)}
 	, fill_width{rv_fill_width}
 {}
-
-YSL_IMPL_STORAGE std::size_t ThreadFrame::index() const
-{
-	return detail::thread_frame_index();
-}
 
 YSL_IMPL_STORAGE StreamLogger::SkipEmptyLogMessage::~SkipEmptyLogMessage()
 {
@@ -335,12 +338,12 @@ YSL_IMPL_STORAGE Emitter& StreamLogger::thread_emitter()
 
 YSL_IMPL_STORAGE std::ostream& StreamLogger::thread_stream()
 {
-	return detail ::thread_stream();
+	return detail::thread_stream();
 }
 
 YSL_IMPL_STORAGE void StreamLogger::reset()
 {
-	detail ::thread_stream().reset(this, m_message->stream());
+	detail::thread_stream().reset(this, m_message->stream());
 }
 
 } // namespace YSL_NAMESPACE

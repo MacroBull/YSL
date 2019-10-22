@@ -54,10 +54,10 @@ struct ThreadFrame
 	const std::string name;
 	const std::size_t fill_width{25};
 
+	static std::size_t index();
+
 	explicit ThreadFrame(std::string rv_name) noexcept;
 	ThreadFrame(std::string rv_name, std::size_t rv_fill_width) noexcept;
-
-	std::size_t index() const;
 };
 
 // the YSL logger class
