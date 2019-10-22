@@ -21,17 +21,17 @@ Copyright (c) 2019 Macrobull
 
 #ifdef YSL_NAMESPACE // namespace can be redefined
 
-#define YSL_NS_ YSL_NAMESPACE::
+#define YSL_NS YSL_NAMESPACE
 
 #else
 
-#define YSL_NAMESPACE YSL
+#define YSL_NS YSL
 
 #endif
 
 //// YSL interfaces
 
-namespace YSL_NAMESPACE
+namespace YSL_NS
 {
 
 // inherit YAML namespace
@@ -216,72 +216,76 @@ make_stream_logging_scope(const char* file, int line, google::LogSeverity severi
 	return Scope<End...>{file, line, severity, begin, end, enabled};
 }
 
-} // namespace YSL_NAMESPACE
+} // namespace YSL_NS
 
 //// YSL macros, see @ref "glog/logging.h"
 
-#ifndef YSL_NS_
+namespace YSL_ = YSL_NS; // prevent recursive macro expansion
 
-namespace YSL_ = YSL; // prevent recursive macro expansion
+#ifdef YSL_NAMESPACE
 
-#define YSL_NS_ YSL_::
+namespace YSL = YSL_NS; // define YSL
+
+#else
+
+#define YSL_NAMESPACE YSL_NS // define YSL_NAMESPACE
 
 #endif
 
-#define YSL(severity) YSL_NS_ StreamLogger{__FILE__, __LINE__, google::GLOG_##severity}.self()
-#define YSL_AT_LEVEL(severity) YSL_NS_ StreamLogger(__FILE__, __LINE__, severity).self()
+#define YSL(severity) YSL_NS::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity}.self()
+#define YSL_AT_LEVEL(severity) YSL_NS::StreamLogger(__FILE__, __LINE__, severity).self()
 
 #define YSL_TO_STRING(severity, message)                                                       \
-	YSL_NS_ StreamLogger{                                                                      \
+	YSL_NS::StreamLogger{                                                                      \
 			__FILE__, __LINE__, google::GLOG_##severity, static_cast<std::string*>(message)}   \
 			.self()
 #define YSL_STRING(severity, outvec)                                                           \
-	YSL_NS_ StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                          \
+	YSL_NS::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                          \
 						 static_cast<std::vector<std::string>*>(outvec)}                       \
 			.self()
 #define YSL_TO_SINK(sink, severity)                                                            \
-	YSL_NS_ StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                          \
+	YSL_NS::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                          \
 						 static_cast<google::LogSink*>(sink), true}                            \
 			.self()
 #define YSL_TO_SINK_BUT_NOT_TO_LOGFILE(sink, severity)                                         \
-	YSL_NS_ StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                          \
+	YSL_NS::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                          \
 						 static_cast<google::LogSink*>(sink), false}                           \
 			.self()
 
 #define YSL_IF(severity, condition)                                                            \
-	!(condition) ? (void)0 : YSL_NS_ LoggerVoidify() & YSL(severity)
+	!(condition) ? (void)0 : YSL_NS::LoggerVoidify() & YSL(severity)
 #define VYSL(verboselevel) YSL_IF(INFO, VLOG_IS_ON(verboselevel))
 #define VYSL_IF(verboselevel, condition) YSL_IF(INFO, ((condition) && VLOG_IS_ON(verboselevel)))
 
 #define YSL_SCOPE_(severity, ...)                                                              \
 	auto LOG_EVERY_N_VARNAME(scope_, __LINE__)                                                 \
 	{                                                                                          \
-		YSL_NS_ make_stream_logging_scope(__FILE__, __LINE__, google::GLOG_##severity,         \
-										  YSL_NS_ make_sequential(__VA_ARGS__),                \
-										  YSL_NS_ make_sequential(YSL_NS_ EndMap))             \
+		YSL_NS::make_stream_logging_scope(__FILE__, __LINE__, google::GLOG_##severity,         \
+										  YSL_NS::make_sequential(__VA_ARGS__),                \
+										  YSL_NS::make_sequential(YSL_NS::EndMap))             \
 	}
-#define YSL_SCOPE(severity) YSL_SCOPE_(severity, YSL_NS_ BeginMap)
+#define YSL_SCOPE(severity) YSL_SCOPE_(severity, YSL_NS::BeginMap)
 #define YSL_FSCOPE(severity, name)                                                             \
-	YSL_SCOPE_(severity, YSL_NS_ ThreadFrame(name), YSL_NS_ BeginMap)
+	YSL_SCOPE_(severity, YSL_NS::ThreadFrame(name), YSL_NS::BeginMap)
 #define YSL_MSCOPE(severity, name)                                                             \
-	YSL_SCOPE_(severity, YSL_NS_ Key, name, YSL_NS_ Value, YSL_NS_ Block, YSL_NS_ BeginMap)
+	YSL_SCOPE_(severity, YSL_NS::Key, name, YSL_NS::Value, YSL_NS::Block, YSL_NS::BeginMap)
 #define YSL_CSCOPE(severity, name)                                                             \
-	YSL_SCOPE_(severity, YSL_NS_ Key, name, YSL_NS_ Value, YSL_NS_ Flow, YSL_NS_ BeginMap)
+	YSL_SCOPE_(severity, YSL_NS::Key, name, YSL_NS::Value, YSL_NS::Flow, YSL_NS::BeginMap)
 
 #define VYSL_SCOPE_(verboselevel, ...)                                                         \
 	auto LOG_EVERY_N_VARNAME(scope_, __LINE__)                                                 \
 	{                                                                                          \
-		YSL_NS_ make_stream_logging_scope(                                                     \
-				__FILE__, __LINE__, google::GLOG_INFO, YSL_NS_ make_sequential(__VA_ARGS__),   \
-				YSL_NS_ make_sequential(YSL_NS_ EndMap), VLOG_IS_ON(verboselevel))             \
+		YSL_NS::make_stream_logging_scope(                                                     \
+				__FILE__, __LINE__, google::GLOG_INFO, YSL_NS::make_sequential(__VA_ARGS__),   \
+				YSL_NS::make_sequential(YSL_NS::EndMap), VLOG_IS_ON(verboselevel))             \
 	}
-#define VYSL_SCOPE(verboselevel) VYSL_SCOPE_(verboselevel, YSL_NS_ BeginMap)
+#define VYSL_SCOPE(verboselevel) VYSL_SCOPE_(verboselevel, YSL_NS::BeginMap)
 #define VYSL_FSCOPE(verboselevel, name)                                                        \
-	VYSL_SCOPE_(verboselevel, YSL_NS_ ThreadFrame(name), YSL_NS_ BeginMap)
+	VYSL_SCOPE_(verboselevel, YSL_NS::ThreadFrame(name), YSL_NS::BeginMap)
 #define VYSL_MSCOPE(verboselevel, name)                                                        \
-	VYSL_SCOPE_(verboselevel, YSL_NS_ Key, name, YSL_NS_ Value, YSL_NS_ Block, YSL_NS_ BeginMap)
+	VYSL_SCOPE_(verboselevel, YSL_NS::Key, name, YSL_NS::Value, YSL_NS::Block, YSL_NS::BeginMap)
 #define VYSL_CSCOPE(verboselevel, name)                                                        \
-	VYSL_SCOPE_(verboselevel, YSL_NS_ Key, name, YSL_NS_ Value, YSL_NS_ Flow, YSL_NS_ BeginMap)
+	VYSL_SCOPE_(verboselevel, YSL_NS::Key, name, YSL_NS::Value, YSL_NS::Flow, YSL_NS::BeginMap)
 
 #define YSL_INDEXED_(name, id) (std::string{name} + '[' + std::to_string(id) + ']')
 #define YSL_IFSCOPE(severity, name, id) YSL_FSCOPE(severity, YSL_INDEXED_(name, id))
