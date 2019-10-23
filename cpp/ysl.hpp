@@ -175,7 +175,7 @@ public:
 	{
 		if (m_enabled)
 		{
-			m_logger.construct(file, line, severity);
+			m_logger.construct(m_file, m_line, m_severity);
 			*m_logger << begin;
 			m_logger.try_destruct();
 		}
@@ -287,7 +287,8 @@ namespace YSL = YSL_NS; // define YSL
 #define VYSL_CSCOPE(verboselevel, name)                                                        \
 	VYSL_SCOPE_(verboselevel, YSL_NS::Key, name, YSL_NS::Value, YSL_NS::Flow, YSL_NS::BeginMap)
 
-#define YSL_INDEXED_(name, id) (std::string{name} + '[' + std::to_string(id) + ']')
+#define YSL_INDEXED_(name, id)                                                                 \
+	(std::string{name}.append("[").append(std::to_string(id)).append("]"))
 #define YSL_IFSCOPE(severity, name, id) YSL_FSCOPE(severity, YSL_INDEXED_(name, id))
 #define YSL_IMSCOPE(severity, name, id) YSL_MSCOPE(severity, YSL_INDEXED_(name, id))
 #define YSL_ICSCOPE(severity, name, id) YSL_CSCOPE(severity, YSL_INDEXED_(name, id))

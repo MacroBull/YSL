@@ -22,10 +22,10 @@ def tensor_constructor(
 	return tensor_cls(ast.literal_eval(constructor.construct_scalar(node)))
 
 
-def pb2_constructor(
+def pb_message_constructor(
 	constructor:yaml.BaseLoader, node:yaml.Node,
 	message_cls:'Optional[type]'=None)->'Any':
-	"""construct protobuf 2 scalar"""
+	"""construct protobuf message scalar"""
 
 	return constructor.construct_scalar(node) # TODO: implement this
 
@@ -34,6 +34,10 @@ if DEFAULT_LOADER != yaml.FullLoader:
 	yaml.add_constructor('!complex', yaml.constructor.FullConstructor.construct_python_complex, Loader=DEFAULT_LOADER)
 
 yaml.add_constructor('!tensor', tensor_constructor, Loader=DEFAULT_LOADER)
+yaml.add_constructor(
+	'!pb2_message', pb_message_constructor, Loader=DEFAULT_LOADER)
+yaml.add_constructor(
+	'!pb3_message', pb_message_constructor, Loader=DEFAULT_LOADER)
 
 if __name__ == '__main__':
 	from io import StringIO

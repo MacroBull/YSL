@@ -310,8 +310,14 @@ YSL_IMPL_STORAGE StreamLogger& StreamLogger::operator<<(const ThreadFrame& value
 	// self() << EndDoc;
 
 	auto&      stream = thread_stream();
-	const auto text =
-			" " + value.name + ": " + std::to_string(detail::thread_frame_index()++) + " ";
+	const auto text{
+		std::string{" "}
+		.append(value.name)
+		.append(": ")
+		.append(std::to_string(detail::thread_frame_index()++))
+		.append(" ")
+		};
+
 	stream << "--- # ";
 	stream << std::setfill('-')
 		   << std::setw(static_cast<int>(value.fill_width + text.size() / 2));
