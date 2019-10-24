@@ -7,6 +7,7 @@ Copyright (c) 2019 Macrobull
 #pragma once
 
 #include <iomanip>
+#include <mutex>
 
 #include "ysl.hpp"
 
@@ -158,6 +159,8 @@ namespace detail
 
 // static stubs
 
+using log_level_t = decltype(FLAGS_minloglevel);
+
 inline YSL_IMPL_NS_ FilterForwardOutStream& thread_stream()
 {
 	static thread_local FilterForwardOutStream ret{};
@@ -170,10 +173,22 @@ inline Emitter& thread_emitter()
 	return ret;
 }
 
-inline const decltype(FLAGS_minloglevel)& min_log_level()
+inline std::mutex& minloglevel_mutex()
 {
-	// constify minloglevel, call this after glog initialized
-	static const decltype(FLAGS_minloglevel) ret{FLAGS_minloglevel};
+	static std::mutex ret{};
+	return ret;
+}
+
+// constify minloglevel, call this after glog initialized
+inline log_level_t min_log_level()
+{
+	static const log_level_t ret{[]() {
+		auto& mutex = minloglevel_mutex();
+		mutex.lock();
+		auto minloglevel = FLAGS_minloglevel;
+		mutex.unlock();
+		return minloglevel;
+	}()};
 	return ret;
 }
 
@@ -190,12 +205,14 @@ namespace YSL_IMPL_NS
 
 inline void bypass_glog_flush()
 {
+	detail::minloglevel_mutex().lock();
 	FLAGS_minloglevel = google::NUM_SEVERITIES;
 }
 
 inline void restore_glog_state()
 {
 	FLAGS_minloglevel = detail::min_log_level();
+	detail::minloglevel_mutex().unlock();
 }
 
 } // namespace YSL_IMPL_NS
@@ -245,6 +262,7 @@ YSL_IMPL_STORAGE void StreamLogger::SkipEmptyLogMessage::reset()
 {
 	auto buf     = static_cast<google::base_logging::LogStreamBuf*>(stream().rdbuf());
 	m_init_count = buf->pcount();
+	detail::min_log_level(); // ensure min_log_level initialized
 }
 
 YSL_IMPL_STORAGE bool StreamLogger::set_thread_format(EMITTER_MANIP value)
