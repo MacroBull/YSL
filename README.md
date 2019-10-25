@@ -43,7 +43,7 @@ Try `sh demo.sh`
 - [x] cpp: implement Scope{Sequential enter, Sequential exit}
 - [x] cpp: add SCOPE(plain), FSCOPE(frame + scope), MSCOPE(key + scope), CSCOPE(key + flow + scope)
 - [x] cpp: add IFSCOPE(frame + id + scope), IMSCOPE(key + id + scope), ICSCOPE(key + id + flow + scope) overloads
-- [ ] python: python < 3.6 support
+- [x] python: python < 3.6 support
 - [ ] python: implement ysl.py with yaml + backends(logging)
 - [ ] python: inherited yaml.XXConstructor, XXLoader
 - [ ] python: implement protobuf constructor

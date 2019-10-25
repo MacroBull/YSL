@@ -11,7 +11,7 @@ from __future__ import division
 import io
 import yaml
 
-DEFAULT_LOADER :type = yaml.SafeLoader
+DEFAULT_LOADER = yaml.SafeLoader
 
 
 def tensor_constructor(

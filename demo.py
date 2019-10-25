@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
 
 
 plt.interactive(True)
-ax = plt.subplot(title=f'Thread {thread_id}')
+ax = plt.subplot(title='Thread {}'.format(thread_id))
 t1 = time.time()
 series = dict()
 msg_stream = get_msg(record_stream)

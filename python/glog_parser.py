@@ -14,13 +14,13 @@ from collections import namedtuple
 from datetime import datetime
 
 
-GLOG_HEAD_GROUP_NAME :tuple = ('level', 'date', 'thread_id', 'filename', 'line', 'msg')
+GLOG_HEAD_GROUP_NAME = ('level', 'date', 'thread_id', 'filename', 'line', 'msg')
 GLOG_HEAD_PATTEN = r'([IWEF])(\d{4}\s+\d\d:\d\d:\d\d\.\d{6})\s+(\d+)\s+(\w+\.\w+):(\d+)\]\s'
 GLOG_PERROR_PATTEN = r'C(ould not create log|OULD NOT CREATE LOG).+\n'
 GLOG_HEAD_REGEX = re.compile(GLOG_HEAD_PATTEN)
 GLOG_PERROR_REGEX = re.compile(GLOG_PERROR_PATTEN)
 
-record :type = namedtuple('record', GLOG_HEAD_GROUP_NAME)
+record = namedtuple('record', GLOG_HEAD_GROUP_NAME)
 
 
 def get_msg(record_stream:"Iterable[record]")->"Iterable[str]":

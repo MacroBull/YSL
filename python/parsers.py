@@ -23,7 +23,7 @@ class TextStreamIO(io.TextIOBase):
     if `force_readline` is True, any read(size > 0) will equally be readline()
     """
 
-    name :str = '(TextStream)'
+    name = '(TextStream)'
 
     def __init__(self, text_stream:'Iterable[str]',
                  force_readline:bool=False):
@@ -110,9 +110,9 @@ class StreamParser(object):
         return buffer
 
 
-FRAME_FIELDS :tuple = ('name', 'index')
+FRAME_FIELDS = ('name', 'index')
 
-frame :type = namedtuple('frame', FRAME_FIELDS)
+frame = namedtuple('frame', FRAME_FIELDS)
 
 
 class FrameParser(StreamParser):
@@ -121,7 +121,7 @@ class FrameParser(StreamParser):
     (name, index) is stored and can be fetched with pop_frame
     """
 
-    PATTERN :str = r'--- #\s+-*\s+(.+)\s+-*\s+# ---\n'
+    PATTERN = r'--- #\s+-*\s+(.+)\s+-*\s+# ---\n'
     REGEX = re.compile(PATTERN)
 
     @staticmethod

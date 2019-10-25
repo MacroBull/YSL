@@ -52,7 +52,7 @@ def ssh_tailc(address:str, filename:str,
               **kwargs)->Popen:
     """tail cat and follow via ssh"""
 
-    proc = Popen(f'ssh {address} "tail -Fc+0 {filename}"',
+    proc = Popen('ssh {} "tail -Fc+0 {}"'.format(address, filename),
                  stdout=PIPE, shell=True, **kwargs)
     return proc
 
