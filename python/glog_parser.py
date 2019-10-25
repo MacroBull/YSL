@@ -36,7 +36,7 @@ class GlogParser(object):
         if `hold_last` is True, the last record will not be emitted by default
     """
 
-    LEVEL_MAPPING :'Mapping[Any, int]' = {
+    LEVEL_MAPPING = {
             0: 0, 1: 1, 2: 2, 3: 3,
             'I': 0, 'W': 1, 'E': 2, 'F': 3,
             'INFO': 0, 'WARNING': 1, 'ERROR': 2, 'FATAL': 3,
