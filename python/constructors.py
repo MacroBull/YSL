@@ -8,7 +8,7 @@ Created on Fri Sep 20 10:10:45 2019
 
 from __future__ import division
 
-import ast
+import io
 import yaml
 
 DEFAULT_LOADER :type = yaml.SafeLoader
@@ -19,7 +19,7 @@ def tensor_constructor(
 	tensor_cls:type=list)->'Any':
 	"""construct tensor scalar"""
 
-	return tensor_cls(ast.literal_eval(constructor.construct_scalar(node)))
+	return tensor_cls(yaml.safe_load(io.StringIO(constructor.construct_scalar(node))))
 
 
 def pb_message_constructor(
@@ -31,18 +31,17 @@ def pb_message_constructor(
 
 
 if DEFAULT_LOADER != yaml.FullLoader:
-	yaml.add_constructor('!complex', yaml.constructor.FullConstructor.construct_python_complex, Loader=DEFAULT_LOADER)
+	yaml.add_constructor(
+            '!complex', yaml.constructor.FullConstructor.construct_python_complex,
+            Loader=DEFAULT_LOADER,
+            )
 
 yaml.add_constructor('!tensor', tensor_constructor, Loader=DEFAULT_LOADER)
-yaml.add_constructor(
-	'!pb2_message', pb_message_constructor, Loader=DEFAULT_LOADER)
-yaml.add_constructor(
-	'!pb3_message', pb_message_constructor, Loader=DEFAULT_LOADER)
+yaml.add_constructor('!pb2_message', pb_message_constructor, Loader=DEFAULT_LOADER)
+yaml.add_constructor('!pb3_message', pb_message_constructor, Loader=DEFAULT_LOADER)
 
 if __name__ == '__main__':
-	from io import StringIO
-
-	stream = StringIO()
+	stream = io.StringIO()
 
 	stream.seek(0)
 	stream.write('Complex: !complex 1+2j')

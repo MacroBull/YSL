@@ -8,10 +8,13 @@ Created on Fri Sep 20 10:42:02 2019
 
 from __future__ import division
 
-import io, re
+import io, logging, re
 import yaml
 
 from collections import namedtuple
+
+
+logger = logging.getLogger(__name__)
 
 
 class TextStreamIO(io.TextIOBase):
@@ -179,6 +182,7 @@ def frame_parser(
                 yield frame_parser_.pop_frame(), document
         except yaml.YAMLError as e:
             if persistent:
+                logger.warn('got exception:\n%s\nparser will be reseted', e)
                 continue
             else:
                 raise e

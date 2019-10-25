@@ -25,7 +25,7 @@ record :type = namedtuple('record', GLOG_HEAD_GROUP_NAME)
 
 def get_msg(record_stream:"Iterable[record]")->"Iterable[str]":
     """get msg field in record"""
-    
+
     return map(lambda rec: rec.msg, record_stream)
 
 
@@ -154,4 +154,4 @@ if __name__ == '__main__':
             record_stream = func(record_stream, *filter_params)
     msg_stream = get_msg(record_stream)
     for msg in msg_stream:
-        print(msg)
+        print(msg, end='')
