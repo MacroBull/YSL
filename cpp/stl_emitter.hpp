@@ -9,6 +9,7 @@ Copyright (c) 2019 Macrobull
 #include <complex>
 #include <tuple>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 
 #include "emitter_extra.hpp"
@@ -113,6 +114,17 @@ inline detail::enable_if_t<detail::stl_has_type_element_type<T>::value, Emitter&
 operator<<(Emitter& emitter, const T& value)
 {
 	return emitter << value.get();
+}
+
+//// HINT: general (non-STL) streamable (AS TAGGED LITERAL)
+
+template <typename T>
+inline detail::enable_if_t<!detail::stl_is_std_iterable<T>::value &&
+								   !detail::stl_has_type_element_type<T>::value,
+						   Emitter&>
+operator<<(Emitter& emitter, const T& value)
+{
+	return detail::emit_streamable(emitter << LocalTag(typeid(T).name()) << Literal, value);
 }
 
 } // namespace YAML

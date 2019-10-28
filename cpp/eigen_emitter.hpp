@@ -31,7 +31,11 @@ Emitter& operator<<(Emitter& emitter, const Eigen::DenseBase<T>& value)
 
 	const typename T::Nested matrix = value.eval();
 
-	if (matrix.cols() <= 1)
+	if (matrix.rows() > 1 && matrix.cols() > 1) // simplify vector representation
+	{
+		emitter << LocalTag("tensor");
+	}
+	else
 	{
 		emitter << Flow;
 	}

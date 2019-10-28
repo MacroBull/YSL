@@ -4,8 +4,8 @@
 #include <thread>
 #include <vector>
 
-#include "ysl.hpp"
 #include "stl_emitter.hpp"
+#include "ysl.hpp"
 
 int main()
 {

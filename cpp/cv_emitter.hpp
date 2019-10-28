@@ -25,6 +25,8 @@ Emitter& operator<<(Emitter& emitter, const cv::Mat& value);
 template <typename T>
 Emitter& operator<<(Emitter& emitter, const cv::Mat_<T>& value)
 {
+	emitter << LocalTag("tensor");
+
 #ifndef YAML_EMITTER_NO_CV_FORMATTER
 
 	auto formatter = cv::Formatter::get(cv::Formatter::FMT_PYTHON);
@@ -38,8 +40,7 @@ Emitter& operator<<(Emitter& emitter, const cv::Mat_<T>& value)
 #endif
 
 	return detail::emit_streamable(
-			emitter << LocalTag("tensor") << Literal,
-			cv::Formatter::get(cv::Formatter::FMT_PYTHON)->format(value));
+			emitter << Literal, cv::Formatter::get(cv::Formatter::FMT_PYTHON)->format(value));
 
 #else
 
@@ -63,6 +64,15 @@ Emitter& operator<<(Emitter& emitter, const cv::Mat_<T>& value)
 template <typename T, int M, int N>
 Emitter& operator<<(Emitter& emitter, const cv::Matx<T, M, N>& value)
 {
+	if (value.rows > 1 && value.cols > 1) // simplify vector representation
+	{
+		emitter << LocalTag("tensor");
+	}
+	else
+	{
+		emitter << Flow;
+	}
+
 	emitter << BeginSeq;
 	for (int i = 0; i < value.rows; ++i)
 	{

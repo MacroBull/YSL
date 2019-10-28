@@ -163,18 +163,21 @@ using log_level_t = decltype(FLAGS_minloglevel);
 
 inline YSL_IMPL_NS_ FilterForwardOutStream& thread_stream()
 {
+	// HINT: destruct until the thread ends
 	static thread_local FilterForwardOutStream ret{};
 	return ret;
 }
 
 inline Emitter& thread_emitter()
 {
+	// HINT: destruct until the thread ends
 	static thread_local Emitter ret{thread_stream()};
 	return ret;
 }
 
 inline std::mutex& minloglevel_mutex()
 {
+	// HINT: static variable lifetime
 	static std::mutex ret{};
 	return ret;
 }
@@ -279,30 +282,30 @@ YSL_IMPL_STORAGE bool StreamLogger::set_thread_format(LoggerFormat value, std::s
 	auto& emitter = thread_emitter();
 	switch (value)
 	{
-	case LoggerFormat::Indent:
-	{
-		return emitter.SetIndent(n);
-	}
-	case LoggerFormat::PreCommentIndent:
-	{
-		return emitter.SetPreCommentIndent(n);
-	}
-	case LoggerFormat::PostCommentIndent:
-	{
-		return emitter.SetPostCommentIndent(n);
-	}
-	case LoggerFormat::FloatPrecision:
-	{
-		return emitter.SetFloatPrecision(n);
-	}
-	case LoggerFormat::DoublePrecision:
-	{
-		return emitter.SetDoublePrecision(n);
-	}
-	default:
-	{
-		return false;
-	}
+		case LoggerFormat::Indent:
+		{
+			return emitter.SetIndent(n);
+		}
+		case LoggerFormat::PreCommentIndent:
+		{
+			return emitter.SetPreCommentIndent(n);
+		}
+		case LoggerFormat::PostCommentIndent:
+		{
+			return emitter.SetPostCommentIndent(n);
+		}
+		case LoggerFormat::FloatPrecision:
+		{
+			return emitter.SetFloatPrecision(n);
+		}
+		case LoggerFormat::DoublePrecision:
+		{
+			return emitter.SetDoublePrecision(n);
+		}
+		default:
+		{
+			return false;
+		}
 	}
 }
 
