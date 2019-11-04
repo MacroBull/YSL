@@ -6,7 +6,7 @@ Created on Mon Sep 16 13:36:20 2019
 @author: Macrobull
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
@@ -45,7 +45,7 @@ class GlogParser(object):
     @classmethod
     def make_record(
             cls,
-            *args:'Tuple[Any, ...]',
+            *args,
             append_msg:str='')->record:
         """
         make a 'record' with the matched pattern

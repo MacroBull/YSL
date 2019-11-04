@@ -6,7 +6,7 @@ Created on Fri Sep 20 10:42:02 2019
 @author: Macrobull
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, unicode_literals
 
 import io, logging, re
 import yaml
@@ -125,7 +125,7 @@ class FrameParser(StreamParser):
     REGEX = re.compile(PATTERN)
 
     @staticmethod
-    def make_frame(*args:'Tuple[Any, ...]')->frame:
+    def make_frame(*args)->frame:
         """make frame"""
 
         text, = args

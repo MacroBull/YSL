@@ -6,7 +6,7 @@ Created on Sun Sep 15 22:09:46 2019
 @author: Macrobull
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, unicode_literals
 
 from subprocess import Popen, PIPE
 

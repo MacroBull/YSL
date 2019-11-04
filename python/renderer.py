@@ -6,7 +6,7 @@ Created on Fri Sep 20 10:42:02 2019
 @author: Macrobull
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, unicode_literals
 
 import logging, re
 
@@ -53,9 +53,9 @@ class BasicRenderer(object):
 
         self.logger.info('exiting ...')
         self.backend.terminate()
-        kill_proc(self.backend) # WORKAROUND
+        kill_proc(self.backend) # WORKAROUND: for some backends
 
-    def create_backend(self, log_path:str)->'Tuple[Process, List[Pipe]]':
+    def create_backend(self, log_path:str)->'Tuple[Process, Sequence[Pipe]]':
         """
         default implementation to create a backend service,
         a backend service parses the log given by `log_path` asynchronously,
@@ -72,7 +72,7 @@ class BasicRenderer(object):
                 )
         return backend, (frontend_cpipe, data_rpipe)
 
-    def create_frontend(self, pipes:'List[Pipe]')->'Any':
+    def create_frontend(self, pipes:'Sequence[Pipe]')->'Any':
         """
         default implementation to create a frontend interface,
         the frontend instance should have the 'run()' method to start its event loop
@@ -96,7 +96,7 @@ class BasicRenderer(object):
                     except BaseException as e:
                         self.renderer.logger.error('frontend got exception:\n%s', e)
                         try:
-                            self.control_pipe.send(True)
+                            self.control_pipe.send(True) # sample control command
                         except BrokenPipeError:
                             pass
                         break
@@ -107,13 +107,15 @@ class BasicRenderer(object):
     def service(self, control_pipe:Pipe, data_pipe:Pipe, log_path:str):
         """the default backend service"""
 
-        from backends import tailc, ssh_tailc
-        from glog_parser import GlogParser, get_msg
-        from parsers import frame_parser
+        from ysl.backends import tailc, ssh_tailc
+        from ysl.constructors import LogLoader
+        from ysl.glog_parser import GlogParser, get_msg
+        from ysl.parsers import frame_parser
 
         logger = logging.getLogger('service')
         logger.info('create default YSL parser')
 
+        # auto local / remote tailc
         match = re.fullmatch(r'((\w+@)?.+):(.+)', log_path)
         if match is None:
             logger.info('with local file: %s', log_path)
@@ -126,14 +128,14 @@ class BasicRenderer(object):
         glog_parser = GlogParser()
         record_stream = glog_parser.process(proc.stdout)
         msg_stream = get_msg(record_stream)
-        frame_stream = frame_parser(msg_stream, persistent=True)
+        frame_stream = frame_parser(msg_stream, yaml_loader_cls=LogLoader, persistent=True)
 
         for frame in frame_stream:
             if control_pipe.poll():
                 command = control_pipe.recv()
-                if command:
+                if command: # sample control command
                     logger.info('got exit command, exiting ...')
-                    return
+                    break
 
             data_pipe.send(frame)
 

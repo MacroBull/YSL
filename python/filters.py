@@ -6,17 +6,25 @@ Created on Fri Sep 20 10:10:45 2019
 @author: Macrobull
 """
 
-from __future__ import division
+from __future__ import absolute_import, division, unicode_literals
 
 import re
 
 
+def is_listy(obj:'Any')->bool:
+    """is `obj` 'list'-like"""
+
+    return isinstance(obj, (tuple, list, set))
+
+
 def level_filter(
-        record_stream:'Iterable[record]', level:int)->'Iterable[record]':
+        record_stream:'Iterable[record]',
+        level:'Union[int, Sequence[int]]')->'Iterable[record]':
     """filter record by level"""
 
-    level = int(level)
-    return filter(lambda record: record.level >= level, record_stream)
+    levels = level if is_listy(level) else (level, )
+    levels = list(map(int, levels))
+    return filter(lambda record: record.level in levels, record_stream)
 
 
 def thread_filter(
@@ -24,7 +32,7 @@ def thread_filter(
         thread:'Union[int, Sequence[int]]')->'Iterable[record]':
     """filter record by thread_id"""
 
-    thread_ids = thread if isinstance(thread, (list, tuple, set)) else (thread, )
+    thread_ids = thread if is_listy(thread) else (thread, )
     thread_ids = list(map(int, thread_ids))
     return filter(lambda record: record.thread_id in thread_ids, record_stream)
 
