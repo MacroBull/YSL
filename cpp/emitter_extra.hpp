@@ -23,6 +23,41 @@ namespace detail
 template <bool P, typename T = void>
 using enable_if_t = typename std::enable_if<P, T>::type;
 
+template <typename... Args>
+struct make_void
+{
+	using type = void;
+};
+
+template <typename... Args>
+using void_t = typename make_void<Args...>::type;
+
+struct char8
+{
+	char x[8];
+};
+
+template <typename T>
+char8 is_complete_helper(char (*)[sizeof(T)]);
+
+template <typename>
+char is_complete_helper(...);
+
+template <typename T>
+struct is_complete
+{
+	static const bool value = sizeof(is_complete_helper<T>(nullptr)) != 1;
+};
+
+template <class T, typename Test = void>
+struct is_emittable : std::false_type
+{};
+
+template <class T>
+struct is_emittable<T, void_t<decltype(std::declval<Emitter&>() << std::declval<T>())>>
+	: std::true_type
+{};
+
 //// helpers
 
 template <typename T>
@@ -133,6 +168,15 @@ inline Emitter& emit_complex(Emitter& emitter, const T& real, const T& imag)
 
 } // namespace detail
 
+//// extra enums
+
+template <typename T>
+inline detail::enable_if_t<std::is_enum<T>::value, Emitter&> operator<<(Emitter& emitter, T v)
+{
+	emitter << LocalTag(typeid(T).name());
+	return emitter.WriteIntegralType(v);
+}
+
 //// extra pointers
 
 inline Emitter& operator<<(Emitter& emitter, std::nullptr_t)
@@ -140,9 +184,30 @@ inline Emitter& operator<<(Emitter& emitter, std::nullptr_t)
 	return emitter << _Null{};
 }
 
-inline Emitter& operator<<(Emitter& emitter, const void* v)
+template <typename T>
+inline detail::enable_if_t<!detail::is_complete<T>::value, Emitter&>
+operator<<(Emitter& emitter, const T* v)
 {
+	emitter << LocalTag(typeid(T*).name()); // tag ptr typeid
+	if (v == nullptr)
+	{
+		return emitter << _Null{};
+	}
+
 	return emitter.WriteIntegralType(v);
+}
+
+template <typename T>
+inline detail::enable_if_t<detail::is_complete<T>::value, Emitter&>
+operator<<(Emitter& emitter, const T* v)
+{
+	// emitter << LocalTag(typeid(T).name()); // tag typeid
+	if (v == nullptr)
+	{
+		return emitter << _Null{};
+	}
+
+	return emitter << *v;
 }
 
 template <typename... Args>

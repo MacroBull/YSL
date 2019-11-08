@@ -313,7 +313,7 @@ YSL_IMPL_STORAGE StreamLogger::~StreamLogger()
 {
 	self() << Newline;
 	//	m_implicit_eol = true;
-	//	ThreadEmitter << Newline; // throw ?
+	//	thread_emitter() << Newline; // throw !?
 	m_message.try_destruct();
 	YSL_IMPL_NS_ restore_glog_state();
 }

@@ -22,7 +22,7 @@ Emitter& operator<<(Emitter& emitter, const google::protobuf::Message& value)
 	const auto file_descriptor = descriptor->file();
 	GOOGLE_CHECK_NOTNULL(file_descriptor);
 
-	const auto text{std::string{"{\n"}.append(value.DebugString()).append("}")};
+	const auto text{std::string{"{\n"}.append(value.DebugString()).append("}")}; // brace added
 
 	switch (file_descriptor->syntax())
 	{
@@ -31,7 +31,8 @@ Emitter& operator<<(Emitter& emitter, const google::protobuf::Message& value)
 			return emitter << LocalTag("pb3_message") << Literal << text;
 		}
 		case FileDescriptor::SYNTAX_PROTO2:
-		default: // HINT: fallback to pb2 by default
+		case FileDescriptor::SYNTAX_UNKNOWN: // HINT: fallback to pb2 by default
+		default:                             // HINT: fallback to pb2 by default
 		{
 			return emitter << LocalTag("pb2_message") << Literal << text;
 		}
