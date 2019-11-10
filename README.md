@@ -1,4 +1,5 @@
 # YSL
+
 💄 YAML Stream Logging, structured Google logging with YAML!
 
 Integrated in yaml-cpp on this branch: https://github.com/MacroBull/yaml-cpp/blob/mymod/include/yaml-cpp/contrib/ysl.hpp
@@ -37,14 +38,12 @@ Try `sh demo.sh`
 
 - [ ] more documentation
 - [x] cpp: inline version
-- [x] cpp: abstract emitter overloads, especially tagged literals -> extraemitter.h
-- [ ] cpp: add Reconstructable< NullableStreamLogger >
 - [x] cpp: add Sequential
 - [x] cpp: implement Scope{Sequential enter, Sequential exit}
 - [x] cpp: add SCOPE(plain), FSCOPE(frame + scope), MSCOPE(key + scope), CSCOPE(key + flow + scope)
-- [x] cpp: add IFSCOPE(frame + id + scope), IMSCOPE(key + id + scope), ICSCOPE(key + id + flow + scope) overloads
-- [ ] python: python < 3.6 support
+- [x] cpp: add IFSCOPE(frame + id + scope), IMSCOPE(key + id + scope), ICSCOPE(key + id + flow + scope)
+- [x] python: python < 3.6 support
 - [ ] python: implement ysl.py with yaml + backends(logging)
-- [ ] python: inherited yaml.XXConstructor, XXLoader
-- [ ] python: implement protobuf constructor
+- [x] python: inherited yaml.XXConstructor, XXLoader
+- [x] python: implement protobuf constructor
 - [ ] python: add FrameParser.fastforward_to
