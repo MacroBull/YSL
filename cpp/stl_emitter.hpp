@@ -9,6 +9,7 @@ Copyright (c) 2019 Macrobull
 #include <complex>
 #include <tuple>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 
 #include "emitter_extra.hpp"
@@ -20,15 +21,6 @@ namespace detail
 {
 
 //// traits
-
-template <typename... Args>
-struct stl_make_void
-{
-	using type = void;
-};
-
-template <typename... Args>
-using stl_void_t = typename stl_make_void<Args...>::type;
 
 template <typename T, typename Test = void>
 struct stl_is_std_iterable : std::false_type
@@ -46,7 +38,7 @@ struct stl_is_std_iterable<
 	struct stl_has_type_##name : std::false_type                                               \
 	{};                                                                                        \
 	template <class T>                                                                         \
-	struct stl_has_type_##name<T, stl_void_t<typename T::name>> : std::true_type               \
+	struct stl_has_type_##name<T, void_t<typename T::name>> : std::true_type                   \
 	{};
 
 TRAITS_DECL_CLASS_HAS_TYPE(element_type)
@@ -113,6 +105,18 @@ inline detail::enable_if_t<detail::stl_has_type_element_type<T>::value, Emitter&
 operator<<(Emitter& emitter, const T& value)
 {
 	return emitter << value.get();
+}
+
+//// HINT: general (non-STL) streamable (AS TAGGED LITERAL)
+
+template <typename T>
+inline detail::enable_if_t<!std::is_enum<T>::value && !std::is_pointer<T>::value &&
+								   !detail::stl_is_std_iterable<T>::value &&
+								   !detail::stl_has_type_element_type<T>::value,
+						   Emitter&>
+operator<<(Emitter& emitter, const T& value)
+{
+	return detail::emit_streamable(emitter << LocalTag(typeid(T).name()) << Literal, value);
 }
 
 } // namespace YAML

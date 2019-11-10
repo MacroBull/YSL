@@ -19,7 +19,7 @@ Copyright (c) 2019 Macrobull
 
 //// YSL configs
 
-#ifdef YSL_NAMESPACE // namespace can be redefined
+#ifdef YSL_NAMESPACE // namespace can be customized
 
 #define YSL_NS YSL_NAMESPACE
 
