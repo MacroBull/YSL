@@ -28,7 +28,7 @@ public:
 
 	stack_storage(const stack_storage&) = default;
 
-	~stack_storage()
+	virtual ~stack_storage()
 	{
 		try_destruct();
 	}
@@ -47,24 +47,24 @@ public:
 
 	inline bool inited() const
 	{
-		return m_inited;
+		return m_pointer != nullptr;
 	}
 
 	template <typename... CArgs>
 	inline T& construct(CArgs... args)
 	{
 		try_destruct();
-		new (std::addressof(m_payload)) T{std::move(args)...};
-		m_inited = true;
-		return m_payload;
+		new (m_storage) T{std::move(args)...};
+		m_pointer = reinterpret_cast<T*>(m_storage);
+		return *m_pointer;
 	}
 
 	inline bool try_destruct()
 	{
-		if (m_inited)
+		if (m_pointer != nullptr)
 		{
-			m_payload.~T(); // noexcept
-			m_inited = false;
+			m_pointer->~T(); // noexcept
+			m_pointer = nullptr;
 			return true;
 		}
 
@@ -74,16 +74,17 @@ public:
 protected:
 	inline T& get_payload()
 	{
-		assert(m_inited && "accessing unconstructed storage");
+		assert(inited() && "accessing unconstructed storage");
 
-		return m_payload;
+		return *m_pointer;
 	}
 
 private:
 	union
 	{
-		T m_payload;
+		// T m_payload;
+		char m_storage[sizeof(T)];
 	};
 
-	bool m_inited{false};
+	T* m_pointer{nullptr};
 };

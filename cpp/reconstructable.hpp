@@ -31,7 +31,8 @@ inline T& reconstruct(T& target, CArgs... args)
 template <typename T>
 struct ReconstructorBase
 {
-	virtual ~ReconstructorBase()     = default;
+	virtual ~ReconstructorBase() = default;
+
 	virtual T& construct(T&) const   = 0;
 	virtual T& reconstruct(T&) const = 0;
 };
@@ -99,9 +100,9 @@ public:
 		m_reconstructor = nullptr;
 	}
 
-	ReconstructableImpl(const ReconstructableImpl&) = default;
+	ReconstructableImpl(const ReconstructableImpl&) = delete; // default = delete
 
-	ReconstructableImpl& operator=(const ReconstructableImpl&) = default;
+	ReconstructableImpl& operator=(const ReconstructableImpl&) = delete; // default = delete
 
 	inline void reconstruct();
 
@@ -112,7 +113,7 @@ private:
 //// Reconstructable: purify arguments of @ref ReconstructableImpl
 
 template <typename T>
-struct Reconstructable : ReconstructableImpl<T>
+struct Reconstructable final : ReconstructableImpl<T>
 {
 	template <typename... CArgs>
 	explicit Reconstructable(CArgs... args)

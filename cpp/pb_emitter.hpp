@@ -22,7 +22,7 @@ Emitter& operator<<(Emitter& emitter, const google::protobuf::Message& value)
 	const auto file_descriptor = descriptor->file();
 	GOOGLE_CHECK_NOTNULL(file_descriptor);
 
-	const auto text{std::string{"{\n"}.append(value.DebugString()).append("}")}; // brace added
+	const auto text{std::string{"{\n"}.append(value.DebugString()).append("}")}; // add extra {}
 
 	switch (file_descriptor->syntax())
 	{

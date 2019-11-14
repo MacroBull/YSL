@@ -60,11 +60,11 @@ def construct_pb_message(
     """construct protobuf message scalar"""
 
     ret = constructor.construct_scalar(node)
-    ret = ret[1:-1] # remove extra { and }
+    ret = ret[1:-1] # remove extra {}
     if message_cls is None:
-        from quick_prototxt import parse_prototxt
+        from quick_prototxt import load_prototxt
 
-        return parse_prototxt(ret)
+        return load_prototxt(ret)
     else:
         from google.protobuf import text_format
 
