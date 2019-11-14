@@ -26,14 +26,14 @@ public:
 		construct(std::forward<CArgs>(args)...);
 	}
 
-	stack_storage(const stack_storage& rvalue) = default;
+	stack_storage(const stack_storage&) = default;
 
 	~stack_storage()
 	{
 		try_destruct();
 	}
 
-	stack_storage& operator=(const stack_storage& rvalue) = default;
+	stack_storage& operator=(const stack_storage&) = default;
 
 	inline T& operator*()
 	{

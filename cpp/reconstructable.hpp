@@ -99,9 +99,9 @@ public:
 		m_reconstructor = nullptr;
 	}
 
-	ReconstructableImpl(const ReconstructableImpl& /*rvalue*/) = default;
+	ReconstructableImpl(const ReconstructableImpl&) = default;
 
-	ReconstructableImpl& operator=(const ReconstructableImpl& /*rvalue*/) = default;
+	ReconstructableImpl& operator=(const ReconstructableImpl&) = default;
 
 	inline void reconstruct();
 

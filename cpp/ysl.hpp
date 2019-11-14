@@ -53,11 +53,12 @@ struct ThreadFrame
 {
 	const std::string name;
 	const std::size_t fill_width{25};
+	const bool        reset{false};
 
 	static std::size_t index();
 
 	explicit ThreadFrame(std::string rv_name) noexcept;
-	ThreadFrame(std::string rv_name, std::size_t rv_fill_width) noexcept;
+	ThreadFrame(std::string rv_name, std::size_t rv_fill_width, bool rv_reset) noexcept;
 };
 
 // the YSL logger class
@@ -108,7 +109,7 @@ public:
 	inline StreamLogger& operator<<(const T& value)
 	{
 		m_implicit_eol = true;
-		thread_emitter() << value; // throw ?
+		thread_emitter() << value;
 		return *this;
 	}
 
@@ -186,7 +187,7 @@ public:
 		, m_enabled{xvalue.m_enabled}
 	{}
 
-	Scope& operator=(const Scope& /*rvalue*/) = default;
+	Scope& operator=(const Scope&) = default;
 
 	~Scope()
 	{
@@ -232,6 +233,17 @@ namespace YSL = YSL_NS; // define YSL
 
 #endif
 
+// comment
+
+#define LOGC(severity) LOG(severity) << "# "
+#define LOGI(severity, indent)                                                                 \
+	LOG(severity) << std::setw(indent + 2) << std::setfill(' ') << "# "
+#define VLOGC(verboselevel) VLOG(verboselevel) << "# "
+#define VLOGI(verboselevel, indent)                                                            \
+	VLOG(verboselevel) << std::setw(indent + 2) << std::setfill(' ') << "# "
+
+// YSL
+
 #define YSL(severity) YSL_::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity}.self()
 #define YSL_AT_LEVEL(severity) YSL_::StreamLogger(__FILE__, __LINE__, severity).self()
 
@@ -252,10 +264,14 @@ namespace YSL = YSL_NS; // define YSL
 					   static_cast<google::LogSink*>(sink), false}                             \
 			.self()
 
+// YSL_IF, VYSL
+
 #define YSL_IF(severity, condition)                                                            \
 	!(condition) ? (void)0 : YSL_::LoggerVoidify() & YSL(severity)
 #define VYSL(verboselevel) YSL_IF(INFO, VLOG_IS_ON(verboselevel))
-#define VYSL_IF(verboselevel, condition) YSL_IF(INFO, ((condition) && VLOG_IS_ON(verboselevel)))
+#define VYSL_IF(verboselevel, condition) YSL_IF(INFO, (condition) && VLOG_IS_ON(verboselevel))
+
+// scope
 
 #define YSL_SCOPE_(severity, ...)                                                              \
 	auto LOG_EVERY_N_VARNAME(scope_, __LINE__)                                                 \
@@ -286,6 +302,8 @@ namespace YSL = YSL_NS; // define YSL
 #define VYSL_CSCOPE(verboselevel, name)                                                        \
 	VYSL_SCOPE_(verboselevel, YSL_::Key, name, YSL_::Value, YSL_::Flow, YSL_::BeginMap)
 
+// scope with index
+
 #define YSL_INDEXED_(name, id)                                                                 \
 	(std::string{name}.append("[").append(std::to_string(id)).append("]"))
 #define YSL_IFSCOPE(severity, name, id) YSL_FSCOPE(severity, YSL_INDEXED_(name, id))
@@ -294,3 +312,29 @@ namespace YSL = YSL_NS; // define YSL
 #define VYSL_IFSCOPE(severity, name, id) VYSL_FSCOPE(severity, YSL_INDEXED_(name, id))
 #define VYSL_IMSCOPE(severity, name, id) VYSL_MSCOPE(severity, YSL_INDEXED_(name, id))
 #define VYSL_ICSCOPE(severity, name, id) VYSL_CSCOPE(severity, YSL_INDEXED_(name, id))
+
+// DYSL
+
+#define DLOGC !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & LOGC
+#define DLOGI !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & LOGI
+#define DVLOGC !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VLOGC
+#define DVLOGI !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VLOGI
+#define DYSL !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL
+#define DYSL_AT_LEVEL !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_AT_LEVEL
+#define DYSL_IF !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_IF
+#define DVYSL !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL
+#define DVYSL_IF !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL_IF
+#define DYSL_SCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_SCOPE
+#define DYSL_FSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_FSCOPE
+#define DYSL_MSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_MSCOPE
+#define DYSL_CSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_CSCOPE
+#define DVYSL_SCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL_SCOPE
+#define DVYSL_FSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL_FSCOPE
+#define DVYSL_MSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL_MSCOPE
+#define DVYSL_CSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL_CSCOPE
+#define DYSL_IFSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_IFSCOPE
+#define DYSL_IMSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_IMSCOPE
+#define DYSL_ICSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & YSL_ICSCOPE
+#define DVYSL_IFSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL_IFSCOPE
+#define DVYSL_IMSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL_IMSCOPE
+#define DVYSL_ICSCOPE !(DCHECK_IS_ON()) ? (void)0 : google::LogMessageVoidify() & VYSL_ICSCOPE

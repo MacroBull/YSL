@@ -48,9 +48,9 @@ public:
 		, m_end_with_eol{false}
 	{}
 
-	FilterForwardOutStreamBuf(const FilterForwardOutStreamBuf& /* rvalue*/) = default;
+	FilterForwardOutStreamBuf(const FilterForwardOutStreamBuf&) = default;
 
-	FilterForwardOutStreamBuf& operator=(const FilterForwardOutStreamBuf& /* rvalue*/) = delete;
+	FilterForwardOutStreamBuf& operator=(const FilterForwardOutStreamBuf&) = delete;
 
 	inline bool end_with_eol() const
 	{
@@ -82,9 +82,9 @@ public:
 		rdbuf(&m_streambuf);
 	}
 
-	FilterForwardOutStream(const FilterForwardOutStream& /* rvalue*/) = delete;
+	FilterForwardOutStream(const FilterForwardOutStream&) = delete;
 
-	FilterForwardOutStream& operator=(const FilterForwardOutStream& /* rvalue*/) = delete;
+	FilterForwardOutStream& operator=(const FilterForwardOutStream&) = delete;
 
 	inline StreamLogger* parent() const
 	{
@@ -168,10 +168,20 @@ inline YSL_IMPL_NS_ FilterForwardOutStream& thread_stream()
 	return ret;
 }
 
-inline Emitter& thread_emitter()
+inline Reconstructable<Emitter>& thread_emitter()
 {
 	// HINT: destruct until the thread ends
-	static thread_local Emitter ret{thread_stream()};
+	static thread_local Reconstructable<Emitter> ret{
+			std::reference_wrapper<FilterForwardOutStream>(thread_stream())};
+	if (!ret.good())
+	{
+		LOGC(ERROR);
+		LOGC(ERROR) << "YAML emitter is in bad state: " << ret.GetLastError();
+		LOGC(ERROR) << "  it is going to be reseted with new document";
+		LOGC(ERROR) << "  some of the log may be discarded ";
+		LOGC(ERROR);
+		ret.reconstruct();
+	}
 	return ret;
 }
 
@@ -230,9 +240,10 @@ YSL_IMPL_STORAGE ThreadFrame::ThreadFrame(std::string rv_name) noexcept
 {}
 
 YSL_IMPL_STORAGE
-ThreadFrame::ThreadFrame(std::string rv_name, std::size_t rv_fill_width) noexcept
+ThreadFrame::ThreadFrame(std::string rv_name, std::size_t rv_fill_width, bool rv_reset) noexcept
 	: name{std::move(rv_name)}
 	, fill_width{rv_fill_width}
+	, reset{rv_reset}
 {}
 
 YSL_IMPL_STORAGE StreamLogger::SkipEmptyLogMessage::~SkipEmptyLogMessage()
@@ -313,7 +324,7 @@ YSL_IMPL_STORAGE StreamLogger::~StreamLogger()
 {
 	self() << Newline;
 	//	m_implicit_eol = true;
-	//	thread_emitter() << Newline; // throw !?
+	//	thread_emitter() << Newline;
 	m_message.try_destruct();
 	YSL_IMPL_NS_ restore_glog_state();
 }
@@ -321,14 +332,21 @@ YSL_IMPL_STORAGE StreamLogger::~StreamLogger()
 YSL_IMPL_STORAGE StreamLogger& StreamLogger::operator<<(EMITTER_MANIP value)
 {
 	m_implicit_eol = value != Newline;
-	thread_emitter() << value; // throw !?
+	thread_emitter() << value;
 	return *this;
 }
 
 YSL_IMPL_STORAGE StreamLogger& StreamLogger::operator<<(const ThreadFrame& value)
 {
 	m_implicit_eol = false;
-	// self() << EndDoc;
+
+	if (value.reset)
+	{
+		auto& emitter  = detail::thread_emitter();
+		m_implicit_eol = true;
+		emitter << EndDoc;
+		emitter.reconstruct();
+	}
 
 	auto&      stream = thread_stream();
 	const auto text{std::string{" "}
@@ -343,7 +361,7 @@ YSL_IMPL_STORAGE StreamLogger& StreamLogger::operator<<(const ThreadFrame& value
 	stream << text;
 	stream << std::setfill('-')
 		   << std::setw(static_cast<int>(value.fill_width - text.size() / 2));
-	stream << " # "; // ---\n
+	stream << " # ";
 
 	self() << BeginDoc;
 	return *this;
