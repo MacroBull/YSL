@@ -28,8 +28,9 @@ struct stl_is_std_iterable : std::false_type
 
 template <typename T>
 struct stl_is_std_iterable<
-		T, enable_if_t<std::is_same<decltype(std::begin(std::declval<T>())),
-									decltype(std::end(std::declval<T>()))>::value>>
+		T,
+		enable_if_t<std::is_same<decltype(std::begin(std::declval<T>())),
+								 decltype(std::end(std::declval<T>()))>::value>>
 	: std::true_type
 {};
 
@@ -110,13 +111,14 @@ operator<<(Emitter& emitter, const T& value)
 //// HINT: general (non-STL) streamable (AS TAGGED LITERAL)
 
 template <typename T>
-inline detail::enable_if_t<!std::is_enum<T>::value && !std::is_pointer<T>::value &&
-								   !detail::stl_is_std_iterable<T>::value &&
-								   !detail::stl_has_type_element_type<T>::value,
+inline detail::enable_if_t<!(std::is_enum<T>::value || std::is_pointer<T>::value ||
+							 detail::stl_is_std_iterable<T>::value ||
+							 detail::stl_has_type_element_type<T>::value),
 						   Emitter&>
 operator<<(Emitter& emitter, const T& value)
 {
-	return detail::emit_streamable(emitter << LocalTag(typeid(T).name()) << Literal, value);
+	return detail::emit_streamable(
+			emitter << LocalTag(detail::typeid_name<T>()) << Literal, value);
 }
 
 } // namespace YAML

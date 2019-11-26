@@ -48,7 +48,9 @@ public:
 		, m_end_with_eol{false}
 	{}
 
-	FilterForwardOutStreamBuf(const FilterForwardOutStreamBuf&) = default;
+	~FilterForwardOutStreamBuf() override = default;
+
+	FilterForwardOutStreamBuf(const FilterForwardOutStreamBuf&) = delete;
 
 	FilterForwardOutStreamBuf& operator=(const FilterForwardOutStreamBuf&) = delete;
 
@@ -81,6 +83,8 @@ public:
 	{
 		rdbuf(&m_streambuf);
 	}
+
+	~FilterForwardOutStream() override = default;
 
 	FilterForwardOutStream(const FilterForwardOutStream&) = delete;
 

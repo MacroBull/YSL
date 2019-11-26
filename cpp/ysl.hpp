@@ -182,12 +182,14 @@ public:
 		}
 	}
 
+	Scope(const Scope&) = delete; // force move
+
 	Scope(Scope&& xvalue) noexcept
 		: m_end{std::move(xvalue.m_end)}
 		, m_enabled{xvalue.m_enabled}
 	{}
 
-	Scope& operator=(const Scope&) = default;
+	Scope& operator=(const Scope&) = delete; // force move
 
 	~Scope()
 	{
@@ -237,10 +239,10 @@ namespace YSL = YSL_NS; // define YSL
 
 #define LOGC(severity) LOG(severity) << "# "
 #define LOGI(severity, indent)                                                                 \
-	LOG(severity) << std::setw(indent + 2) << std::setfill(' ') << "# "
+	LOG(severity) << std::setw((indent) + 2) << std::setfill(' ') << "# "
 #define VLOGC(verboselevel) VLOG(verboselevel) << "# "
 #define VLOGI(verboselevel, indent)                                                            \
-	VLOG(verboselevel) << std::setw(indent + 2) << std::setfill(' ') << "# "
+	VLOG(verboselevel) << std::setw((indent) + 2) << std::setfill(' ') << "# "
 
 // YSL
 
@@ -274,7 +276,7 @@ namespace YSL = YSL_NS; // define YSL
 // scope
 
 #define YSL_SCOPE_(severity, ...)                                                              \
-	auto LOG_EVERY_N_VARNAME(scope_, __LINE__)                                                 \
+	auto LOG_EVERY_N_VARNAME(ysl_scope_, __LINE__)                                             \
 	{                                                                                          \
 		YSL_::make_stream_logging_scope(__FILE__, __LINE__, google::GLOG_##severity,           \
 										YSL_::make_sequential(__VA_ARGS__),                    \
@@ -288,7 +290,7 @@ namespace YSL = YSL_NS; // define YSL
 	YSL_SCOPE_(severity, YSL_::Key, name, YSL_::Value, YSL_::Flow, YSL_::BeginMap)
 
 #define VYSL_SCOPE_(verboselevel, ...)                                                         \
-	auto LOG_EVERY_N_VARNAME(scope_, __LINE__)                                                 \
+	auto LOG_EVERY_N_VARNAME(ysl_scope_, __LINE__)                                             \
 	{                                                                                          \
 		YSL_::make_stream_logging_scope(                                                       \
 				__FILE__, __LINE__, google::GLOG_INFO, YSL_::make_sequential(__VA_ARGS__),     \

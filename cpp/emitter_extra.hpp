@@ -10,6 +10,12 @@ Copyright (c) 2019 Macrobull
 #include <tuple>
 #include <type_traits>
 
+#if defined(__GNUG__)
+
+#include <cxxabi.h>
+
+#endif
+
 #include "yaml-cpp/emitter.h"
 
 namespace YAML
@@ -166,6 +172,27 @@ inline Emitter& emit_complex(Emitter& emitter, const T& real, const T& imag)
 #endif
 }
 
+template <typename T>
+inline std::string typeid_name()
+{
+
+#if defined(__GNUG__)
+
+	int status = 0;
+
+	const auto realname{abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status)};
+	const std::string name{realname};
+	free(realname);
+
+#else
+
+	const std::string name{typeid(T).name()};
+
+#endif
+
+	return name;
+}
+
 } // namespace detail
 
 //// extra enums
@@ -173,7 +200,7 @@ inline Emitter& emit_complex(Emitter& emitter, const T& real, const T& imag)
 template <typename T>
 inline detail::enable_if_t<std::is_enum<T>::value, Emitter&> operator<<(Emitter& emitter, T v)
 {
-	emitter << LocalTag(typeid(T).name());
+	emitter << LocalTag(detail::typeid_name<T>());
 	return emitter.WriteIntegralType(v);
 }
 
@@ -188,7 +215,7 @@ template <typename T>
 inline detail::enable_if_t<!detail::is_complete<T>::value, Emitter&>
 operator<<(Emitter& emitter, const T* v)
 {
-	emitter << LocalTag(typeid(T*).name()); // tag ptr typeid
+	emitter << LocalTag(detail::typeid_name<T*>()); // tag ptr typeid
 	if (v == nullptr)
 	{
 		return emitter << _Null{};
@@ -201,7 +228,7 @@ template <typename T>
 inline detail::enable_if_t<detail::is_complete<T>::value, Emitter&>
 operator<<(Emitter& emitter, const T* v)
 {
-	// emitter << LocalTag(typeid(T).name()); // tag typeid
+	// emitter << LocalTag(detail::typeid_name<T>()); // tag typeid
 	if (v == nullptr)
 	{
 		return emitter << _Null{};

@@ -7,7 +7,6 @@ Copyright (c) 2019 Macrobull
 #pragma once
 
 #include <memory>
-#include <type_traits>
 #include <utility>
 
 #include <cassert>
@@ -18,7 +17,8 @@ template <typename T>
 class stack_storage
 {
 public:
-	stack_storage() {}
+	// stack_storage() {}
+	stack_storage() = default;
 
 	template <typename... CArgs>
 	explicit stack_storage(CArgs... args)
@@ -26,23 +26,25 @@ public:
 		construct(std::forward<CArgs>(args)...);
 	}
 
-	stack_storage(const stack_storage&) = default;
-
 	virtual ~stack_storage()
 	{
 		try_destruct();
 	}
 
+	stack_storage(const stack_storage&) = default;
+
 	stack_storage& operator=(const stack_storage&) = default;
 
 	inline T& operator*()
 	{
-		return get_payload();
+		check_inited();
+		return *m_pointer;
 	}
 
 	inline T* operator->()
 	{
-		return &get_payload();
+		check_inited();
+		return m_pointer;
 	}
 
 	inline bool inited() const
@@ -72,19 +74,16 @@ public:
 	}
 
 protected:
-	inline T& get_payload()
+	inline void check_inited()
 	{
-		assert(inited() && "accessing unconstructed storage");
-
-		return *m_pointer;
+		assert(m_pointer != nullptr && "accessing unconstructed storage");
 	}
 
 private:
-	union
-	{
-		// T m_payload;
-		char m_storage[sizeof(T)];
-	};
-
-	T* m_pointer{nullptr};
+	//	union
+	//	{
+	//		T m_payload;
+	//	};
+	char m_storage[sizeof(T)]{};
+	T*   m_pointer{nullptr};
 };

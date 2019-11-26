@@ -7,7 +7,7 @@ Copyright (c) 2019 Macrobull
 #pragma once
 
 #include <tuple>
-#include <type_traits>
+#include <utility>
 
 #include <cassert>
 
@@ -31,7 +31,12 @@ inline T& reconstruct(T& target, CArgs... args)
 template <typename T>
 struct ReconstructorBase
 {
+	ReconstructorBase()          = default;
 	virtual ~ReconstructorBase() = default;
+
+	ReconstructorBase(const ReconstructorBase&) = default;
+
+	ReconstructorBase& operator=(const ReconstructorBase&) = default;
 
 	virtual T& construct(T&) const   = 0;
 	virtual T& reconstruct(T&) const = 0;
@@ -113,7 +118,7 @@ private:
 //// Reconstructable: purify arguments of @ref ReconstructableImpl
 
 template <typename T>
-struct Reconstructable final : ReconstructableImpl<T>
+struct Reconstructable final : ReconstructableImpl<T> // final inheritance
 {
 	template <typename... CArgs>
 	explicit Reconstructable(CArgs... args)
