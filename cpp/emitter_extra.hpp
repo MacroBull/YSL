@@ -10,7 +10,7 @@ Copyright (c) 2019 Macrobull
 #include <tuple>
 #include <type_traits>
 
-#if defined(__GNUG__)
+#if defined(YAML_EMITTER_ENABLE_GENERAL_DEMANGLE) && defined(__GNUG__)
 
 #include <cxxabi.h>
 
@@ -176,7 +176,7 @@ template <typename T>
 inline std::string typeid_name()
 {
 
-#if defined(__GNUG__)
+#if defined(YAML_EMITTER_ENABLE_GENERAL_DEMANGLE) && defined(__GNUG__)
 
 	int status = 0;
 

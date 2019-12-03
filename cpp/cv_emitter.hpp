@@ -120,6 +120,19 @@ Emitter& operator<<(Emitter& emitter, const cv::Vec<T, N>& value)
 	return emitter << EndSeq;
 }
 
+//// cv::Vec
+
+template <typename T>
+Emitter& operator<<(Emitter& emitter, const cv::Scalar_<T>& value)
+{
+	emitter << Flow << BeginSeq;
+	for (int i = 0; i < 4; ++i)
+	{
+		emitter << detail::as_numeric(value[i]);
+	}
+	return emitter << EndSeq;
+}
+
 //// cv::Size_
 
 template <typename T>

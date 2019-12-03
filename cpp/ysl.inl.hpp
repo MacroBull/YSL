@@ -361,11 +361,12 @@ YSL_IMPL_STORAGE StreamLogger& StreamLogger::operator<<(const ThreadFrame& value
 
 	stream << "--- # ";
 	stream << std::setfill('-')
-		   << std::setw(static_cast<int>(value.fill_width + text.size() / 2));
+		   << std::setw(static_cast<int>(
+					  std::max(text.size() + 1, value.fill_width + text.size() / 2)));
 	stream << text;
 	stream << std::setfill('-')
-		   << std::setw(static_cast<int>(value.fill_width - text.size() / 2));
-	stream << " # ";
+		   << std::setw(std::max(1, static_cast<int>(value.fill_width - text.size() / 2)));
+	stream << "" << " # ";
 
 	self() << BeginDoc;
 	return *this;
