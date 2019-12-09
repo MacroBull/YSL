@@ -6,7 +6,6 @@ Copyright (c) 2019 Macrobull
 
 #pragma once
 
-#include <iomanip>
 #include <mutex>
 
 #include "ysl.hpp"
@@ -54,12 +53,12 @@ public:
 
 	FilterForwardOutStreamBuf& operator=(const FilterForwardOutStreamBuf&) = delete;
 
-	inline bool end_with_eol() const
+	inline bool end_with_eol() const noexcept
 	{
 		return m_end_with_eol;
 	}
 
-	inline void reset(std::streambuf* const streambuf)
+	inline void reset(std::streambuf* const streambuf) noexcept
 	{
 		m_target       = streambuf;
 		m_dirty        = false;
@@ -90,7 +89,7 @@ public:
 
 	FilterForwardOutStream& operator=(const FilterForwardOutStream&) = delete;
 
-	inline StreamLogger* parent() const
+	inline StreamLogger* parent() const noexcept
 	{
 		return m_parent;
 	}
@@ -353,11 +352,11 @@ YSL_IMPL_STORAGE StreamLogger& StreamLogger::operator<<(const ThreadFrame& value
 	}
 
 	auto&      stream = thread_stream();
-	const auto text{std::string{" "}
-							.append(value.name)
-							.append(": ")
-							.append(std::to_string(detail::thread_frame_index()++))
-							.append(" ")};
+	const auto text   = std::string{" "}
+							  .append(value.name)
+							  .append(": ")
+							  .append(std::to_string(detail::thread_frame_index()++))
+							  .append(" ");
 
 	stream << "--- # ";
 	stream << std::setfill('-')
@@ -366,7 +365,8 @@ YSL_IMPL_STORAGE StreamLogger& StreamLogger::operator<<(const ThreadFrame& value
 	stream << text;
 	stream << std::setfill('-')
 		   << std::setw(std::max(1, static_cast<int>(value.fill_width - text.size() / 2)));
-	stream << "" << " # ";
+	stream << ""
+		   << " # ";
 
 	self() << BeginDoc;
 	return *this;

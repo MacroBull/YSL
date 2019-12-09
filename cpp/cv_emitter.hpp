@@ -89,7 +89,7 @@ Emitter& operator<<(Emitter& emitter, const cv::Matx<T, M, N>& value)
 //// cv::Point_
 
 template <typename T>
-Emitter& operator<<(Emitter& emitter, const cv::Point_<T>& value)
+inline Emitter& operator<<(Emitter& emitter, const cv::Point_<T>& value)
 {
 	emitter << Flow << BeginSeq;
 	emitter << detail::as_numeric(value.x) << detail::as_numeric(value.y);
@@ -99,7 +99,7 @@ Emitter& operator<<(Emitter& emitter, const cv::Point_<T>& value)
 //// cv::Point3_
 
 template <typename T>
-Emitter& operator<<(Emitter& emitter, const cv::Point3_<T>& value)
+inline Emitter& operator<<(Emitter& emitter, const cv::Point3_<T>& value)
 {
 	emitter << Flow << BeginSeq;
 	emitter << detail::as_numeric(value.x) << detail::as_numeric(value.y)
@@ -113,7 +113,7 @@ template <typename T, int N>
 Emitter& operator<<(Emitter& emitter, const cv::Vec<T, N>& value)
 {
 	emitter << Flow << BeginSeq;
-	for (int i = 0; i < N; ++i)
+	for (int i = 0; i < value.channels; ++i)
 	{
 		emitter << detail::as_numeric(value[i]);
 	}
@@ -126,7 +126,7 @@ template <typename T>
 Emitter& operator<<(Emitter& emitter, const cv::Scalar_<T>& value)
 {
 	emitter << Flow << BeginSeq;
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < value.channels; ++i)
 	{
 		emitter << detail::as_numeric(value[i]);
 	}
@@ -136,7 +136,7 @@ Emitter& operator<<(Emitter& emitter, const cv::Scalar_<T>& value)
 //// cv::Size_
 
 template <typename T>
-Emitter& operator<<(Emitter& emitter, const cv::Size_<T>& value)
+inline Emitter& operator<<(Emitter& emitter, const cv::Size_<T>& value)
 {
 	emitter << Flow << BeginSeq;
 	emitter << detail::as_numeric(value.width) << detail::as_numeric(value.height);
@@ -146,7 +146,7 @@ Emitter& operator<<(Emitter& emitter, const cv::Size_<T>& value)
 //// cv::Rect_
 
 template <typename T>
-Emitter& operator<<(Emitter& emitter, const cv::Rect_<T>& value)
+inline Emitter& operator<<(Emitter& emitter, const cv::Rect_<T>& value)
 {
 	emitter << Flow << BeginSeq;
 	emitter << detail::as_numeric(value.x) << detail::as_numeric(value.y);
@@ -156,7 +156,7 @@ Emitter& operator<<(Emitter& emitter, const cv::Rect_<T>& value)
 
 //// cv::Range
 
-Emitter& operator<<(Emitter& emitter, const cv::Range& value);
+Emitter& operator<<(Emitter& emitter, /*const*/ cv::Range/*&*/ value);
 
 //// cv::Complex
 
@@ -168,14 +168,14 @@ inline Emitter& operator<<(Emitter& emitter, const cv::Complex<T>& value)
 
 //// implementations
 
-Emitter& operator<<(Emitter& emitter, const cv::String& value)
+inline Emitter& operator<<(Emitter& emitter, const cv::String& value)
 {
 	return emitter << value.c_str();
 }
 
 #ifndef YAML_EMITTER_NO_CV_FORMATTER
 
-Emitter& operator<<(Emitter& emitter, const cv::Mat& value)
+inline Emitter& operator<<(Emitter& emitter, const cv::Mat& value)
 {
 	auto formatter = cv::Formatter::get(cv::Formatter::FMT_PYTHON);
 	formatter->setMultiline(true);
@@ -194,7 +194,7 @@ Emitter& operator<<(Emitter& emitter, const cv::Mat& value)
 
 #endif
 
-Emitter& operator<<(Emitter& emitter, const cv::Range& value)
+inline Emitter& operator<<(Emitter& emitter, /*const*/ cv::Range/*&*/ value)
 {
 	return emitter << Flow << BeginSeq << value.start << value.end << EndSeq;
 }

@@ -13,10 +13,9 @@ Use macro `YSL` instead of `LOG`, you get a `YAML::Emitter`-like stream with Goo
 
 #include <yaml-cpp/stlemitter.h>
 
-YSL(INFO) << YSL::ThreadFrame("Hello Container") << YAML::FloatPrecision(3) << YAML::BeginMap;
-YSL(INFO) << "hello" << std::map<int, float>{{1, 3.4f}, {2, 6.78f}, {3, 9.0f}};
+YSL_FSCOPE(INFO, "Hello Container");
+YSL(INFO) << "hello" << YAML::FloatPrecision(3) << std::map<int, float>{{1, 3.4f}, {2, 6.78f}, {3, 9.0f}};
 YSL(INFO) << "PI" << YAML::Flow << std::vector<int>{3, 1, 4, 1, 5, 9, 2, 6};
-YSL(INFO) << YAML::EndMap;
 ```
 
 Output:

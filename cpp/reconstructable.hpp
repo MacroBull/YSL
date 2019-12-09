@@ -31,8 +31,8 @@ inline T& reconstruct(T& target, CArgs... args)
 template <typename T>
 struct ReconstructorBase
 {
-	ReconstructorBase()          = default;
-	virtual ~ReconstructorBase() = default;
+	ReconstructorBase()                   = default;
+	virtual ~ReconstructorBase() noexcept = default;
 
 	ReconstructorBase(const ReconstructorBase&) = default;
 
@@ -99,7 +99,7 @@ public:
 										  true, std::forward<CArgs>(args)...}}
 	{}
 
-	~ReconstructableImpl()
+	~ReconstructableImpl() noexcept //
 	{
 		delete m_reconstructor;
 		m_reconstructor = nullptr;
@@ -109,7 +109,7 @@ public:
 
 	ReconstructableImpl& operator=(const ReconstructableImpl&) = delete; // default = delete
 
-	inline void reconstruct();
+	void reconstruct();
 
 private:
 	const ReconstructorBase<ReconstructableImpl>* m_reconstructor{nullptr};
@@ -127,7 +127,7 @@ struct Reconstructable final : ReconstructableImpl<T> // final inheritance
 };
 
 template <typename T>
-void ReconstructableImpl<T>::reconstruct()
+inline void ReconstructableImpl<T>::reconstruct()
 {
 	assert(m_reconstructor != nullptr && "reconstruct without reconstructor");
 

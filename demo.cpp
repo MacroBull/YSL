@@ -4,15 +4,20 @@
 #include <thread>
 #include <vector>
 
-#include "stl_emitter.hpp"
 #include "ysl.hpp"
 
-int main()
+#include "stl_emitter.hpp"
+
+int main(int /*argc*/, char* argv[])
 {
 	// setup glog
-	FLAGS_logtostderr = true;
-	FLAGS_minloglevel = 0;
-	FLAGS_v           = 2;
+	FLAGS_logtostderr      = true;
+	FLAGS_colorlogtostderr = true;
+	FLAGS_minloglevel      = 0;
+	FLAGS_v                = 2;
+	// FLAGS_log_prefix       = false;
+
+	google::InitGoogleLogging(argv[0]);
 
 	// setup YSL for current thread: use 4 sapces as indent
 	YSL::StreamLogger::set_thread_format(YSL::LoggerFormat::Indent, 4);
@@ -23,7 +28,7 @@ int main()
 	// simple key-value scope
 	// YSL(INFO) << key << value;
 	{
-		YSL_FSCOPE(INFO, "A YSL Frame");
+		YSL_FSCOPE(INFO, "A Simple YSL Frame");
 		YSL(INFO) << "name"          // key
 				  << "Mark McGwire"; // value
 		YSL(INFO) << "hr" << 65;
@@ -33,7 +38,7 @@ int main()
 	// stl and flow emission, explicit end-of-document
 	{
 		// manually start a frame
-		YSL(INFO) << YSL::ThreadFrame("Some Containers");
+		YSL(INFO) << YSL::ThreadFrame("Some STL Containers");
 		// setup local precision
 		YSL(INFO) << YSL::FloatPrecision(3);
 		// start a mapping
@@ -41,6 +46,7 @@ int main()
 		YSL(INFO) << "hello" << std::map<int, float>{{1, 3.4f}, {2, 6.78f}, {3, 9.0f}};
 		YSL(INFO) << "PI";
 		YSL(INFO) << YSL::Flow << std::vector<int>{3, 1, 4, 1, 5, 9, 2, 6};
+		YSL(INFO) << "empty tuple" << std::tuple<>();
 		// end the mapping and the frame(explicitly)
 		YSL(INFO) << YSL::EndMap << YSL::EndDoc;
 	}
@@ -49,12 +55,12 @@ int main()
 	{
 		YSL_FSCOPE(INFO, "About Comment, Literal And Newline");
 		YSL(INFO) << YSL::Comment("This is a comment");
+		LOGC(INFO) << "This is a comment by LOGC";
 		YSL(INFO) << "glog newline" << nullptr;
 		LOG(INFO) << std::endl;
 		YSL(INFO) << "ysl newline" << true;
 		YSL(INFO) << YSL::Newline;
 		YSL(INFO) << "newline and literal" << YSL::Literal << "multi\nline\nliteral";
-		YSL(INFO) << YSL::EndMap << YSL::Newline;
 	}
 
 	// LOG_AT_LEVEL like
@@ -75,7 +81,7 @@ int main()
 	const int  m      = 1000;
 	const auto worker = [](int idx) {
 		// use quoted string style for better performance
-		YSL::StreamLogger::set_thread_format(YSL::DoubleQuoted); // better performance
+		YSL::StreamLogger::set_thread_format(YSL::DoubleQuoted);
 		YSL::StreamLogger::set_thread_format(YSL::LoggerFormat::FloatPrecision, 3);
 
 		// interval logging
@@ -83,7 +89,8 @@ int main()
 		{
 			YSL(INFO) << YSL::ThreadFrame("Thread " + std::to_string(idx)) << YSL::Flow
 					  << YSL::BeginMap;
-			auto phase = idx * .1f + loop * .2f;
+
+			auto phase = static_cast<float>(idx) * .1f + static_cast<float>(loop) * .2f;
 			YSL(INFO) << "cos" << std::cos(phase) << "sin" << std::sin(phase);
 			YSL(INFO) << "log" << std::log(phase) << "exp" << std::exp(phase);
 			YSL(INFO) << YSL::EndMap;

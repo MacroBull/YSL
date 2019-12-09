@@ -10,7 +10,7 @@ Copyright (c) 2019 Macrobull
 #include <tuple>
 #include <type_traits>
 
-#if defined(YAML_EMITTER_ENABLE_GENERAL_DEMANGLE) && defined(__GNUG__)
+#if defined(YAML_EMITTER_ENABLE_GENERAL_DEMANGLED_TAG) && defined(__GNUG__)
 
 #include <cxxabi.h>
 
@@ -55,26 +55,26 @@ struct is_complete
 	static const bool value = sizeof(is_complete_helper<T>(nullptr)) != 1;
 };
 
-template <class T, typename Test = void>
-struct is_emittable : std::false_type
+template <class S, class T, typename Test = void>
+struct is_streamable : std::false_type
 {};
 
-template <class T>
-struct is_emittable<T, void_t<decltype(std::declval<Emitter&>() << std::declval<T>())>>
+template <class S, class T>
+struct is_streamable<S, T, void_t<decltype(std::declval<S&>() << std::declval<T>())>>
 	: std::true_type
 {};
 
 //// helpers
 
 template <typename T>
-inline T as_numeric(const T& value)
+inline T as_numeric(T&& value)
 {
 	return value;
 }
 
 template <typename T>
 inline enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value, int>
-as_numeric(const T& value)
+as_numeric(T&& value)
 {
 	return static_cast<int>(value);
 }
@@ -93,17 +93,15 @@ struct sequential_printer
 };
 
 template <typename T>
-struct sequential_printer<T, 1>
+struct sequential_printer<T, 0>
 {
 	template <typename S>
-	inline static void print(S& stream, const T& value)
-	{
-		stream << std::get<0>(value);
-	}
+	inline static void print(S& /*stream*/, const T& /*value*/)
+	{}
 };
 
-template <typename E, typename T>
-inline E& emit_sequence(E& emitter, const T& value)
+template <typename E, typename T> // E can be any Emitter-like
+inline E& emit_sequence(E& emitter, T&& value)
 {
 	emitter << BeginSeq;
 	for (const auto& item : value)
@@ -113,8 +111,8 @@ inline E& emit_sequence(E& emitter, const T& value)
 	return emitter << EndSeq;
 }
 
-template <typename E, typename T>
-inline E& emit_mapping(E& emitter, const T& value)
+template <typename E, typename T> // E can be any Emitter-like
+inline E& emit_mapping(E& emitter, T&& value)
 {
 	emitter << BeginMap;
 	for (const auto& key_value : value)
@@ -126,30 +124,30 @@ inline E& emit_mapping(E& emitter, const T& value)
 
 template <typename T>
 inline Emitter&
-emit_streamable(Emitter& emitter, const T& value, std::stringstream* stream = nullptr)
+emit_streamable(Emitter& emitter, T&& value, std::stringstream* stream = nullptr)
 {
 	std::stringstream stream_;
 	if (stream == nullptr)
 	{
-		stream = &stream_;
-
 #ifdef YSL_NAMESPACE // extension
 
 		emitter.SetStreamablePrecision<T>(stream_);
 
 #endif
+
+		stream = &stream_;
 	}
 	else
 	{
 		stream->str("");
 	}
 
-	*stream << value;
+	*stream << std::forward<T>(value);
 	return emitter << stream->str();
 }
 
 template <typename T>
-inline Emitter& emit_complex(Emitter& emitter, const T& real, const T& imag)
+inline Emitter& emit_complex(Emitter& emitter, T&& real, T&& imag)
 {
 #ifndef YAML_EMITTER_NO_COMPLEX
 
@@ -161,7 +159,7 @@ inline Emitter& emit_complex(Emitter& emitter, const T& real, const T& imag)
 
 #endif
 
-	ss << as_numeric(real) << '+' << as_numeric(imag) << 'j';
+	ss << as_numeric(std::forward<T>(real)) << '+' << as_numeric(std::forward<T>(imag)) << 'j';
 	emitter << LocalTag("complex") << ss.str();
 	return emitter;
 
@@ -176,11 +174,11 @@ template <typename T>
 inline std::string typeid_name()
 {
 
-#if defined(YAML_EMITTER_ENABLE_GENERAL_DEMANGLE) && defined(__GNUG__)
+#if defined(YAML_EMITTER_ENABLE_GENERAL_DEMANGLED_TAG) && defined(__GNUG__)
 
 	int status = 0;
 
-	const auto realname{abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status)};
+	const auto realname = abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status);
 	const std::string name{realname};
 	free(realname);
 
@@ -211,6 +209,8 @@ inline Emitter& operator<<(Emitter& emitter, std::nullptr_t)
 	return emitter << _Null{};
 }
 
+//// general imcomplete pointers
+
 template <typename T>
 inline detail::enable_if_t<!detail::is_complete<T>::value, Emitter&>
 operator<<(Emitter& emitter, const T* v)
@@ -224,6 +224,8 @@ operator<<(Emitter& emitter, const T* v)
 	return emitter.WriteIntegralType(v);
 }
 
+//// general complete pointers
+
 template <typename T>
 inline detail::enable_if_t<detail::is_complete<T>::value, Emitter&>
 operator<<(Emitter& emitter, const T* v)
@@ -236,6 +238,8 @@ operator<<(Emitter& emitter, const T* v)
 
 	return emitter << *v;
 }
+
+//// sequential
 
 template <typename... Args>
 struct Sequential
@@ -255,10 +259,8 @@ inline Sequential<CArgs...> make_sequential(CArgs... args)
 	return Sequential<CArgs...>{std::move(std::make_tuple(std::forward<CArgs>(args)...))};
 }
 
-//// sequential
-
 template <typename... Args>
-Emitter& operator<<(Emitter& emitter, const Sequential<Args...>& value)
+inline Emitter& operator<<(Emitter& emitter, const Sequential<Args...>& value)
 {
 	value.print(emitter);
 	return emitter;

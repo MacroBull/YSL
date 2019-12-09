@@ -47,7 +47,7 @@ public:
 		return m_pointer;
 	}
 
-	inline bool inited() const
+	inline bool inited() const noexcept
 	{
 		return m_pointer != nullptr;
 	}

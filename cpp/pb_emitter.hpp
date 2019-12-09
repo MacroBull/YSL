@@ -22,7 +22,10 @@ Emitter& operator<<(Emitter& emitter, const google::protobuf::Message& value)
 	const auto file_descriptor = descriptor->file();
 	GOOGLE_CHECK_NOTNULL(file_descriptor);
 
-	const auto text{std::string{"{\n"}.append(value.DebugString()).append("}")}; // add extra {}
+	const auto text =
+			std::string{"{\n"}.append(value.DebugString()).append("}"); // add extra {}
+
+#if GOOGLE_PROTOBUF_VERSION >= 3000000
 
 	switch (file_descriptor->syntax())
 	{
@@ -37,6 +40,12 @@ Emitter& operator<<(Emitter& emitter, const google::protobuf::Message& value)
 			return emitter << LocalTag("pb2_message") << Literal << text;
 		}
 	}
+
+#else
+
+	return emitter << LocalTag("pb2_message") << Literal << text;
+
+#endif
 }
 
 } // namespace YAML
