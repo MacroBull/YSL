@@ -33,6 +33,29 @@ class LogLoader(
         yaml.resolver.Resolver.__init__(self)
 
 
+# @dataclass
+class Generic(object):
+    """
+    """
+
+    dtype :str   = ''
+    value :'Any' = None
+
+    def __repr__(self):
+        return f'Generic<{self.dtype}>({self.value})'
+
+
+def multi_construct_generic(
+        constructor:BaseConstructor, tag_suffix:str, node:Node,
+        tag_prefix:str='')->'Any':
+    """ """
+
+    ret = Generic()
+    ret.dtype = tag_prefix + tag_suffix
+    ret.value = constructor.construct_scalar(node)
+    return ret
+
+
 def construct_path(
         constructor:BaseConstructor, node:Node,
         expanduser:bool=False)->'Path':
@@ -71,6 +94,7 @@ def construct_pb_message(
         return text_format.Parse(ret, message_cls())
 
 
+LogConstructor.add_multi_constructor('!', multi_construct_generic)
 LogConstructor.add_constructor('!complex', FullConstructor.construct_python_complex)
 LogConstructor.add_constructor('!path', construct_path)
 LogConstructor.add_constructor('!tensor', construct_tensor)

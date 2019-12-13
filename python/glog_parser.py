@@ -123,7 +123,7 @@ class GlogParser(object):
 
 
 if __name__ == '__main__':
-    import argparse
+    import argparse, re
 
     parser = argparse.ArgumentParser(
             description="glog filter",
@@ -141,9 +141,20 @@ if __name__ == '__main__':
 
     import filters
 
-    from backends import tailc
+    from backends import tailc, ssh_tailc
 
-    proc = tailc(args.log_path[0])
+    log_path = args.log_path[0]
+
+    # auto local / remote tailc
+    match = re.fullmatch(r'((\w+@)?.+):(.+)', log_path)
+    if match is None:
+        print('reading local file:', log_path)
+        proc = tailc(log_path)
+    else:
+        address, _, log_path = match.groups()
+        print('reading SSH remote file:', log_path)
+        proc = ssh_tailc(address, log_path)
+
     parser = GlogParser()
     record_stream = parser.process(proc.stdout)
     if args.filter:
