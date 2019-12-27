@@ -78,7 +78,7 @@ class StreamLogger
 	public:
 		template <typename... CArgs>
 		explicit SkipEmptyLogMessage(CArgs... args)
-			: google::LogMessage{std::forward<CArgs>(args)...}
+			: google::LogMessage(std::forward<CArgs>(args)...)
 		{
 			reset();
 		}
@@ -102,7 +102,7 @@ public:
 	// forward constructor
 	template <typename... CArgs>
 	explicit StreamLogger(CArgs... args)
-		: m_message{std::forward<CArgs>(args)...}
+		: m_message(std::forward<CArgs>(args)...)
 	{
 		reset();
 	}
@@ -158,8 +158,8 @@ protected:
 	void reset();
 
 private:
-	stack_storage<Reconstructable<SkipEmptyLogMessage>> m_message;
-	bool                                                m_implicit_eol{};
+	StackStorage<Reconstructable<SkipEmptyLogMessage>> m_message;
+	bool                                               m_implicit_eol{};
 };
 
 // voidifier, see @ref google::LogMessageVoidify
@@ -177,15 +177,15 @@ public:
 	template <typename... Begin>
 	Scope(const char* file, int line, google::LogSeverity severity,
 		  const Sequential<Begin...>& begin, Sequential<End...> end, bool enabled = true)
-		: m_end{std::move(end)}
-		, m_file{file}
-		, m_line{line}
-		, m_severity{severity}
-		, m_enabled{enabled}
+		: m_end(std::move(end))
+		, m_file(file)
+		, m_line(line)
+		, m_severity(severity)
+		, m_enabled(enabled)
 	{
-		if (sizeof...(Begin) > 0 && m_enabled)
+		if (sizeof...(Begin) > 0 && enabled)
 		{
-			m_logger.construct(m_file, m_line, m_severity);
+			m_logger.construct(file, line, severity);
 			*m_logger << begin;
 			m_logger.try_destruct();
 		}
@@ -199,8 +199,8 @@ public:
 	Scope(const Scope&) = delete; // force move
 
 	Scope(Scope&& xvalue) noexcept
-		: m_end{std::move(xvalue.m_end)}
-		, m_enabled{xvalue.m_enabled}
+		: m_end(std::move(xvalue.m_end))
+		, m_enabled(xvalue.m_enabled)
 	{}
 
 	Scope& operator=(const Scope&) = delete; // force move
@@ -230,12 +230,12 @@ protected:
 	}
 
 private:
-	stack_storage<StreamLogger> m_logger;
-	const Sequential<End...>    m_end;
-	const char* const           m_file{};
-	const int                   m_line{};
-	const google::LogSeverity   m_severity{};
-	const bool                  m_enabled{};
+	StackStorage<StreamLogger> m_logger;
+	const Sequential<End...>   m_end;
+	const char* const          m_file{};
+	const int                  m_line{};
+	const google::LogSeverity  m_severity{};
+	const bool                 m_enabled{};
 };
 
 template <typename... Begin, typename... End>
@@ -244,7 +244,7 @@ make_stream_logging_scope(const char* file, int line, google::LogSeverity severi
 						  const Sequential<Begin...>& begin, const Sequential<End...>& end,
 						  bool enabled = true)
 {
-	return Scope<End...>{file, line, severity, begin, end, enabled};
+	return {file, line, severity, begin, end, enabled};
 }
 
 } // namespace YSL_NS
@@ -274,24 +274,24 @@ namespace YSL = YSL_NS; // define YSL
 
 // YSL
 
-#define YSL(severity) YSL_::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity}.self()
+#define YSL(severity) YSL_::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity).self()
 #define YSL_AT_LEVEL(severity) YSL_::StreamLogger(__FILE__, __LINE__, severity).self()
 
 #define YSL_TO_STRING(severity, message)                                                       \
-	YSL_::StreamLogger{                                                                        \
-			__FILE__, __LINE__, google::GLOG_##severity, static_cast<std::string*>(message)}   \
+	YSL_::StreamLogger(                                                                        \
+			__FILE__, __LINE__, google::GLOG_##severity, static_cast<std::string*>(message))   \
 			.self()
 #define YSL_STRING(severity, outvec)                                                           \
-	YSL_::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                            \
-					   static_cast<std::vector<std::string>*>(outvec)}                         \
+	YSL_::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                            \
+					   static_cast<std::vector<std::string>*>(outvec))                         \
 			.self()
 #define YSL_TO_SINK(sink, severity)                                                            \
-	YSL_::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                            \
-					   static_cast<google::LogSink*>(sink), true}                              \
+	YSL_::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                            \
+					   static_cast<google::LogSink*>(sink), true)                              \
 			.self()
 #define YSL_TO_SINK_BUT_NOT_TO_LOGFILE(sink, severity)                                         \
-	YSL_::StreamLogger{__FILE__, __LINE__, google::GLOG_##severity,                            \
-					   static_cast<google::LogSink*>(sink), false}                             \
+	YSL_::StreamLogger(__FILE__, __LINE__, google::GLOG_##severity,                            \
+					   static_cast<google::LogSink*>(sink), false)                             \
 			.self()
 
 // YSL_IF, VYSL
@@ -312,7 +312,7 @@ namespace YSL = YSL_NS; // define YSL
 									YSL_::make_sequential(__VA_ARGS__),                        \
 									YSL_::make_sequential(YSL_::EndMap))
 #define YSL_SCOPE_DECL_VAR(severity, ...)                                                      \
-	auto LOG_EVERY_N_VARNAME(ysl_scope_, __LINE__) = YSL_SCOPE_(severity, __VA_ARGS__)
+	const auto LOG_EVERY_N_VARNAME(ysl_scope_, __LINE__) = YSL_SCOPE_(severity, __VA_ARGS__)
 #define YSL_SCOPE(severity) YSL_SCOPE_DECL_VAR(severity, YSL_::BeginMap)
 #define YSL_SCOPED(severity)                                                                   \
 	YSL_SCOPE_DECL_VAR(severity, YSL_::BeginMap);                                              \
@@ -329,7 +329,8 @@ namespace YSL = YSL_NS; // define YSL
 			__FILE__, __LINE__, google::GLOG_INFO, YSL_::make_sequential(__VA_ARGS__),         \
 			YSL_::make_sequential(YSL_::EndMap), VLOG_IS_ON(verboselevel))
 #define VYSL_SCOPE_DECL_VAR(verboselevel, ...)                                                 \
-	auto LOG_EVERY_N_VARNAME(ysl_scope_, __LINE__) = VYSL_SCOPE_(verboselevel, __VA_ARGS__)
+	const auto LOG_EVERY_N_VARNAME(ysl_scope_, __LINE__) =                                     \
+			VYSL_SCOPE_(verboselevel, __VA_ARGS__)
 #define VYSL_SCOPE(verboselevel) VYSL_SCOPE_DECL_VAR(verboselevel, YSL_::BeginMap)
 #define VYSL_SCOPED(verboselevel)                                                              \
 	VYSL_SCOPE_DECL_VAR(verboselevel, YSL_::BeginMap);                                         \
@@ -344,7 +345,7 @@ namespace YSL = YSL_NS; // define YSL
 // IxSCOPE: named scopes with indexed key
 
 #define YSL_INDEXED_(name, id)                                                                 \
-	(std::string{name}.append("[").append(YSL_::to_string(id)).append("]"))
+	(std::string(name).append("[").append(YSL_::to_string(id)).append("]"))
 #define YSL_IFSCOPE(severity, name, id) YSL_FSCOPE(severity, YSL_INDEXED_(name, id))
 #define YSL_IMSCOPE(severity, name, id) YSL_MSCOPE(severity, YSL_INDEXED_(name, id))
 #define YSL_ICSCOPE(severity, name, id) YSL_CSCOPE(severity, YSL_INDEXED_(name, id))
@@ -355,7 +356,7 @@ namespace YSL = YSL_NS; // define YSL
 // key-value by local incremental counter(occurrence)
 
 #define YSL_LIC_VARNAME() LOG_EVERY_N_VARNAME(ysl_lic_, __LINE__)
-#define YSL_LIC_DECL_VAR() static size_t YSL_LIC_VARNAME(){0};
+#define YSL_LIC_DECL_VAR() static size_t YSL_LIC_VARNAME()(0);
 #define YSL_LIC(severity, key)                                                                 \
 	YSL_LIC_DECL_VAR();                                                                        \
 	YSL(severity) << YSL_::Key << (key) << YSL_::Value << YSL_LIC_VARNAME()++

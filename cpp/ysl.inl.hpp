@@ -41,10 +41,10 @@ class FilterForwardOutStreamBuf : public std::streambuf
 
 public:
 	explicit FilterForwardOutStreamBuf(const FilterForwardOutStream& stream) noexcept
-		: m_parent{stream}
-		, m_target{nullptr}
-		, m_dirty{false}
-		, m_end_with_eol{false}
+		: m_parent(stream)
+		, m_target(nullptr)
+		, m_dirty(false)
+		, m_end_with_eol(false)
 	{}
 
 	~FilterForwardOutStreamBuf() override = default;
@@ -77,8 +77,8 @@ class FilterForwardOutStream : public std::ostream
 
 public:
 	FilterForwardOutStream() noexcept
-		: m_parent{nullptr}
-		, m_streambuf{*this}
+		: m_parent(nullptr)
+		, m_streambuf(*this)
 	{
 		rdbuf(&m_streambuf);
 	}
@@ -128,7 +128,7 @@ YSL_IMPL_STORAGE int FilterForwardOutStreamBuf::overflow(int c)
 YSL_IMPL_STORAGE std::streamsize
 				 FilterForwardOutStreamBuf::xsputn(const char* s, std::streamsize n)
 {
-	std::streamsize ret{0};
+	std::streamsize ret(0);
 	const auto      logger = m_parent.parent();
 	auto            c      = s;
 
@@ -174,8 +174,8 @@ inline YSL_IMPL_NS_ FilterForwardOutStream& thread_stream()
 inline Reconstructable<Emitter>& thread_emitter()
 {
 	// HINT: destruct until the thread ends
-	static thread_local Reconstructable<Emitter> ret{
-			std::reference_wrapper<FilterForwardOutStream>(thread_stream())};
+	static thread_local Reconstructable<Emitter> ret(
+			(std::reference_wrapper<FilterForwardOutStream>(thread_stream()))); // HINT: use UI
 	if (!ret.good())
 	{
 		LOGC(ERROR);
@@ -198,19 +198,19 @@ inline std::mutex& minloglevel_mutex()
 // constify minloglevel, call this after glog initialized
 inline log_level_t min_log_level()
 {
-	static const log_level_t ret{[]() {
+	static const log_level_t ret([]() {
 		auto& mutex = minloglevel_mutex();
 		mutex.lock();
 		auto minloglevel = FLAGS_minloglevel;
 		mutex.unlock();
 		return minloglevel;
-	}()};
+	}());
 	return ret;
 }
 
 inline std::size_t& thread_frame_index()
 {
-	static thread_local size_t ret{0};
+	static thread_local size_t ret(0);
 	return ret;
 }
 
@@ -239,14 +239,14 @@ YSL_IMPL_STORAGE std::size_t ThreadFrame::index()
 }
 
 YSL_IMPL_STORAGE ThreadFrame::ThreadFrame(std::string rv_name) noexcept
-	: name{std::move(rv_name)}
+	: name(std::move(rv_name))
 {}
 
 YSL_IMPL_STORAGE
 ThreadFrame::ThreadFrame(std::string rv_name, std::size_t rv_fill_width, bool rv_reset) noexcept
-	: name{std::move(rv_name)}
-	, fill_width{rv_fill_width}
-	, reset{rv_reset}
+	: name(std::move(rv_name))
+	, fill_width(rv_fill_width)
+	, reset(rv_reset)
 {}
 
 YSL_IMPL_STORAGE StreamLogger::SkipEmptyLogMessage::~SkipEmptyLogMessage()
@@ -296,30 +296,30 @@ YSL_IMPL_STORAGE bool StreamLogger::set_thread_format(LoggerFormat value, std::s
 	auto& emitter = thread_emitter();
 	switch (value)
 	{
-		case LoggerFormat::Indent:
-		{
-			return emitter.SetIndent(n);
-		}
-		case LoggerFormat::PreCommentIndent:
-		{
-			return emitter.SetPreCommentIndent(n);
-		}
-		case LoggerFormat::PostCommentIndent:
-		{
-			return emitter.SetPostCommentIndent(n);
-		}
-		case LoggerFormat::FloatPrecision:
-		{
-			return emitter.SetFloatPrecision(n);
-		}
-		case LoggerFormat::DoublePrecision:
-		{
-			return emitter.SetDoublePrecision(n);
-		}
-		default:
-		{
-			return false;
-		}
+	case LoggerFormat::Indent:
+	{
+		return emitter.SetIndent(n);
+	}
+	case LoggerFormat::PreCommentIndent:
+	{
+		return emitter.SetPreCommentIndent(n);
+	}
+	case LoggerFormat::PostCommentIndent:
+	{
+		return emitter.SetPostCommentIndent(n);
+	}
+	case LoggerFormat::FloatPrecision:
+	{
+		return emitter.SetFloatPrecision(n);
+	}
+	case LoggerFormat::DoublePrecision:
+	{
+		return emitter.SetDoublePrecision(n);
+	}
+	default:
+	{
+		return false;
+	}
 	}
 }
 
@@ -352,7 +352,7 @@ YSL_IMPL_STORAGE StreamLogger& StreamLogger::operator<<(const ThreadFrame& value
 	}
 
 	auto&      stream = thread_stream();
-	const auto text   = std::string{" "}
+	const auto text   = std::string(" ")
 							  .append(value.name)
 							  .append(": ")
 							  .append(std::to_string(detail::thread_frame_index()++))

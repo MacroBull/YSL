@@ -5,6 +5,11 @@
 
 #include "emitter_extra.hpp"
 
+//// define YAML_DEF_EMIT_WITHOUT_CV_FORMATTER to disable Opencv formatter
+////   see @ref https://docs.opencv.org/trunk/d3/da1/classcv_1_1Formatter.html
+
+// #define YAML_DEF_EMIT_WITHOUT_CV_FORMATTER
+
 namespace YAML
 {
 
@@ -12,11 +17,15 @@ namespace YAML
 
 Emitter& operator<<(Emitter& emitter, const cv::String& value);
 
-#ifndef YAML_EMITTER_NO_CV_FORMATTER
+#ifndef YAML_DEF_EMIT_WITHOUT_CV_FORMATTER
 
 //// cv::Mat
 
 Emitter& operator<<(Emitter& emitter, const cv::Mat& value);
+
+//// cv::MatExpr
+
+Emitter& operator<<(Emitter& emitter, const cv::MatExpr& value);
 
 #endif
 
@@ -27,7 +36,7 @@ Emitter& operator<<(Emitter& emitter, const cv::Mat_<T>& value)
 {
 	emitter << LocalTag("tensor");
 
-#ifndef YAML_EMITTER_NO_CV_FORMATTER
+#ifndef YAML_DEF_EMIT_WITHOUT_CV_FORMATTER
 
 	auto formatter = cv::Formatter::get(cv::Formatter::FMT_PYTHON);
 	formatter->setMultiline(true);
@@ -156,7 +165,7 @@ inline Emitter& operator<<(Emitter& emitter, const cv::Rect_<T>& value)
 
 //// cv::Range
 
-Emitter& operator<<(Emitter& emitter, /*const*/ cv::Range/*&*/ value);
+Emitter& operator<<(Emitter& emitter, /*const*/ cv::Range /*&*/ value);
 
 //// cv::Complex
 
@@ -173,7 +182,7 @@ inline Emitter& operator<<(Emitter& emitter, const cv::String& value)
 	return emitter << value.c_str();
 }
 
-#ifndef YAML_EMITTER_NO_CV_FORMATTER
+#ifndef YAML_DEF_EMIT_WITHOUT_CV_FORMATTER
 
 inline Emitter& operator<<(Emitter& emitter, const cv::Mat& value)
 {
@@ -192,9 +201,14 @@ inline Emitter& operator<<(Emitter& emitter, const cv::Mat& value)
 			cv::Formatter::get(cv::Formatter::FMT_PYTHON)->format(value));
 }
 
+inline Emitter& operator<<(Emitter& emitter, const cv::MatExpr& value)
+{
+	return emitter << static_cast<cv::Mat>(value);
+}
+
 #endif
 
-inline Emitter& operator<<(Emitter& emitter, /*const*/ cv::Range/*&*/ value)
+inline Emitter& operator<<(Emitter& emitter, /*const*/ cv::Range /*&*/ value)
 {
 	return emitter << Flow << BeginSeq << value.start << value.end << EndSeq;
 }

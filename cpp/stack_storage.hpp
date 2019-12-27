@@ -14,26 +14,32 @@ Copyright (c) 2019 Macrobull
 ////
 
 template <typename T>
-class stack_storage
+class StackStorage
 {
 public:
-	// stack_storage() {}
-	stack_storage() = default;
+	// StackStorage() {}
+	StackStorage() = default;
 
 	template <typename... CArgs>
-	explicit stack_storage(CArgs... args)
+	explicit StackStorage(CArgs... args)
 	{
 		construct(std::forward<CArgs>(args)...);
 	}
 
-	virtual ~stack_storage()
+	template <typename U>
+	explicit StackStorage(std::initializer_list<U>&& args)
+	{
+		construct(std::forward<std::initializer_list<U>>(args));
+	}
+
+	virtual ~StackStorage()
 	{
 		try_destruct();
 	}
 
-	stack_storage(const stack_storage&) = default;
+	StackStorage(const StackStorage&) = default;
 
-	stack_storage& operator=(const stack_storage&) = default;
+	StackStorage& operator=(const StackStorage&) = default;
 
 	inline T& operator*()
 	{
@@ -56,16 +62,16 @@ public:
 	inline T& construct(CArgs... args)
 	{
 		try_destruct();
-		new (m_storage) T{std::move(args)...};
+		new (m_storage) T(std::move(args)...);
 		m_pointer = reinterpret_cast<T*>(m_storage);
 		return *m_pointer;
 	}
 
-	inline bool try_destruct()
+	inline bool try_destruct() noexcept
 	{
 		if (m_pointer != nullptr)
 		{
-			m_pointer->~T(); // noexcept
+			m_pointer->~T();
 			m_pointer = nullptr;
 			return true;
 		}
@@ -84,6 +90,6 @@ private:
 	//	{
 	//		T m_payload;
 	//	};
-	char m_storage[sizeof(T)]{};
-	T*   m_pointer{nullptr};
+	alignas(alignof(T)) char m_storage[sizeof(T)]; // {} leave uninitialized
+	T* m_pointer{nullptr};
 };

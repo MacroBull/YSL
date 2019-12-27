@@ -8,15 +8,27 @@ Copyright (c) 2019 Macrobull
 
 #include <sstream>
 #include <tuple>
-#include <type_traits>
+#include <typeinfo>
+#include <utility>
 
-#if defined(YAML_EMITTER_ENABLE_GENERAL_DEMANGLED_TAG) && defined(__GNUG__)
+//// define YAML_DEF_EMIT_NO_COMPLEX to emit complex numbers as sequence
+//// define YAML_DEF_EMIT_ENABLE_GENERAL_DEMANGLED_TAG to enable general demangled tag
+////   currently for GCC only
+
+// #define YAML_DEF_EMIT_NO_COMPLEX
+// #define YAML_DEF_EMIT_ENABLE_GENERAL_DEMANGLED_TAG
+
+#if defined(YAML_DEF_EMIT_ENABLE_GENERAL_DEMANGLED_TAG) && defined(__GNUG__)
+
+#include <cassert>
 
 #include <cxxabi.h>
 
 #endif
 
 #include "yaml-cpp/emitter.h"
+
+// #include "yaml-cpp/traits.h" // HINT: provide YAML::is_streamable since 0.6.3
 
 namespace YAML
 {
@@ -29,6 +41,12 @@ namespace detail
 template <bool P, typename T = void>
 using enable_if_t = typename std::enable_if<P, T>::type;
 
+template <typename T>
+using decay_t = typename std::decay<T>::type;
+
+template <typename T>
+using remove_pointer_t = typename std::remove_pointer<T>::type;
+
 template <typename... Args>
 struct make_void
 {
@@ -38,22 +56,14 @@ struct make_void
 template <typename... Args>
 using void_t = typename make_void<Args...>::type;
 
-struct char8
-{
-	char x[8];
-};
-
-template <typename T>
-char8 is_complete_helper(char (*)[sizeof(T)]);
-
 template <typename>
-char is_complete_helper(...);
+unsigned int is_complete_helper(...);
 
 template <typename T>
-struct is_complete
-{
-	static const bool value = sizeof(is_complete_helper<T>(nullptr)) != 1;
-};
+signed int is_complete_helper(char (*)[sizeof(T)]);
+
+template <typename T>
+using is_complete = std::is_same<decltype(is_complete_helper<T>(nullptr)), signed int>;
 
 template <class S, class T, typename Test = void>
 struct is_streamable : std::false_type
@@ -72,11 +82,14 @@ inline T as_numeric(T&& value)
 	return value;
 }
 
-template <typename T>
-inline enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value, int>
-as_numeric(T&& value)
+inline int as_numeric(char value)
 {
 	return static_cast<int>(value);
+}
+
+inline int as_numeric(unsigned char value)
+{
+	return static_cast<unsigned int>(value);
 }
 
 template <typename T, size_t N>
@@ -85,7 +98,7 @@ struct sequential_printer
 	template <typename S>
 	inline static void print(S& stream, const T& value)
 	{
-		const auto i = N - 1;
+		constexpr auto i = N - 1;
 
 		sequential_printer<T, i>::print(stream, value);
 		stream << std::get<i>(value);
@@ -142,14 +155,14 @@ emit_streamable(Emitter& emitter, T&& value, std::stringstream* stream = nullptr
 		stream->str("");
 	}
 
-	*stream << std::forward<T>(value);
+	*stream << value;
 	return emitter << stream->str();
 }
 
 template <typename T>
 inline Emitter& emit_complex(Emitter& emitter, T&& real, T&& imag)
 {
-#ifndef YAML_EMITTER_NO_COMPLEX
+#ifndef YAML_DEF_EMIT_NO_COMPLEX
 
 	std::stringstream ss;
 
@@ -160,8 +173,7 @@ inline Emitter& emit_complex(Emitter& emitter, T&& real, T&& imag)
 #endif
 
 	ss << as_numeric(std::forward<T>(real)) << '+' << as_numeric(std::forward<T>(imag)) << 'j';
-	emitter << LocalTag("complex") << ss.str();
-	return emitter;
+	return emitter << LocalTag("complex") << ss.str();
 
 #else
 
@@ -174,32 +186,107 @@ template <typename T>
 inline std::string typeid_name()
 {
 
-#if defined(YAML_EMITTER_ENABLE_GENERAL_DEMANGLED_TAG) && defined(__GNUG__)
+#if defined(YAML_DEF_EMIT_ENABLE_GENERAL_DEMANGLED_TAG) && defined(__GNUG__)
 
-	int status = 0;
+	int status(0);
 
 	const auto realname = abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status);
-	const std::string name{realname};
+	assert(status == 0 && "call abi::__cxa_demangle() failed");
+
+	const std::string name(realname);
 	free(realname);
 
 #else
 
-	const std::string name{typeid(T).name()};
+	const std::string name(typeid(T).name());
 
 #endif
 
 	return name;
 }
 
-} // namespace detail
+//// ranked generic emit implementation
 
-//// extra enums
+template <typename T, size_t R, typename Test = void>
+struct generic_emitter : generic_emitter<T, R - 1>
+{};
 
 template <typename T>
-inline detail::enable_if_t<std::is_enum<T>::value, Emitter&> operator<<(Emitter& emitter, T v)
+struct generic_emitter<T, 0>
+{};
+
+//// generic streamable (AS TAGGED LITERAL)
+
+template <typename T>
+struct generic_emitter<T, 1, enable_if_t<is_streamable<std::ostream, T>::value>>
 {
-	emitter << LocalTag(detail::typeid_name<T>());
-	return emitter.WriteIntegralType(v);
+	inline static Emitter& emit(Emitter& emitter, const T& value)
+	{
+		return detail::emit_streamable(emitter << LocalTag(detail::typeid_name<T>()) << Literal,
+									   value); //
+	}
+};
+
+//// generic enums
+
+template <typename T>
+struct generic_emitter<T, 2, enable_if_t<std::is_enum<T>::value>>
+{
+	inline static Emitter& emit(Emitter& emitter, T value)
+	{
+		emitter << LocalTag(detail::typeid_name<decay_t<T>>());
+		return emitter.WriteIntegralType(value);
+	}
+};
+
+//// generic (maybe imcomplete) pointers
+
+template <typename T>
+struct generic_emitter<T, 2, enable_if_t<std::is_pointer<T>::value>>
+{
+	using P = decay_t<remove_pointer_t<T>>;
+
+	inline static Emitter& emit(Emitter& emitter, T value)
+	{
+		emitter << LocalTag(detail::typeid_name<P*>()); // tag ptr typeid
+		if (value == nullptr)
+		{
+			return emitter << _Null{};
+		}
+
+		return emitter.WriteIntegralType(value);
+	}
+};
+
+//// generic complete pointers
+
+template <typename T>
+struct generic_emitter<T, 3,
+					   enable_if_t<std::is_pointer<T>::value &&
+								   detail::is_complete<remove_pointer_t<T>>::value>>
+{
+	using P = decay_t<remove_pointer_t<T>>;
+
+	inline static Emitter& emit(Emitter& emitter, T value)
+	{
+		// emitter << LocalTag(detail::typeid_name<P*>()); // tag ptr typeid
+		if (value == nullptr)
+		{
+			return emitter << _Null{};
+		}
+
+		return emitter << *value;
+	}
+};
+
+} // namespace detail
+
+//// use generic_emitter for generic types
+
+template <typename T>
+inline Emitter& operator<<(Emitter& emitter, const T& value)
+{
+	return detail::generic_emitter<T, 8>::emit(emitter, value);
 }
 
 //// extra pointers
@@ -207,36 +294,6 @@ inline detail::enable_if_t<std::is_enum<T>::value, Emitter&> operator<<(Emitter&
 inline Emitter& operator<<(Emitter& emitter, std::nullptr_t)
 {
 	return emitter << _Null{};
-}
-
-//// general imcomplete pointers
-
-template <typename T>
-inline detail::enable_if_t<!detail::is_complete<T>::value, Emitter&>
-operator<<(Emitter& emitter, const T* v)
-{
-	emitter << LocalTag(detail::typeid_name<T*>()); // tag ptr typeid
-	if (v == nullptr)
-	{
-		return emitter << _Null{};
-	}
-
-	return emitter.WriteIntegralType(v);
-}
-
-//// general complete pointers
-
-template <typename T>
-inline detail::enable_if_t<detail::is_complete<T>::value, Emitter&>
-operator<<(Emitter& emitter, const T* v)
-{
-	// emitter << LocalTag(detail::typeid_name<T>()); // tag typeid
-	if (v == nullptr)
-	{
-		return emitter << _Null{};
-	}
-
-	return emitter << *v;
 }
 
 //// sequential
@@ -256,7 +313,7 @@ struct Sequential
 template <typename... CArgs>
 inline Sequential<CArgs...> make_sequential(CArgs... args)
 {
-	return Sequential<CArgs...>{std::move(std::make_tuple(std::forward<CArgs>(args)...))};
+	return {std::move(std::make_tuple(std::forward<CArgs>(args)...))};
 }
 
 template <typename... Args>
