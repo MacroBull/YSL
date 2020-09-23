@@ -382,3 +382,12 @@ namespace YSL = YSL_NS; // define YSL
 #define DYSL_IF DYSL_(YSL_IF)
 #define DVYSL DYSL_(VYSL)
 #define DVYSL_IF DYSL_(VYSL_IF)
+
+#define YSLV(severity, var_name) YSL(severity) << #var_name << (var_name)
+#define YSLVC(severity, var_name) YSL(severity) << #var_name << YSL_::Flow << (var_name)
+#define YSLVI(var_name) YSL(INFO) << #var_name << (var_name)
+#define YSLVW(var_name) YSL(WARNING) << #var_name << (var_name)
+#define YSLVE(var_name) YSL(ERROR) << #var_name << (var_name)
+#define YSLVF(var_name) YSL(FATAL) << #var_name << (var_name)
+#define VYSLV(verboselevel, var_name) VYSL(verboselevel) << #var_name << (var_name)
+#define DYSLV(severity, var_name) DYSL(severity) << #var_name << (var_name)
